@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+
+# Generated screenshots, reports and mock emails
+public/screenshots/*
+!public/screenshots/.gitkeep
+public/reports/*
+!public/reports/.gitkeep
+mock_emails/
+
+# Local DB / State
+db.json
+
+# Environment / Logs
+.env*
+*.log

@@ -1,0 +1,25 @@
+{
+  "name": "sitewatch-dashboard",
+  "version": "1.0.0",
+  "description": "Real-life SiteWatch website screenshot monitoring portal",
+  "main": "server.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.cjs",
+    "build": "next build",
+    "start": "node server.cjs"
+  },
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "next": "^16.2.9",
+    "nodemailer": "^6.9.16",
+    "postcss": "^8.5.15",
+    "puppeteer": "^22.12.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.0",
+    "xlsx": "^0.18.5"
+  }
+}
