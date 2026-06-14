@@ -54,6 +54,8 @@ function Sidebar({ page, setPage }) {
     { id: "websites", label: "Websites", icon: "🌐" },
     { id: "reports", label: "Reports", icon: "📄" },
     { id: "excel", label: "Excel Import", icon: "📊" },
+    { id: "users", label: "Users", icon: "👥" },
+    { id: "settings", label: "Settings", icon: "⚙️" },
   ];
   return (
     <aside style={{ width: 220, background: "#13151f", borderRight: "1px solid #1e2130", display: "flex", flexDirection: "column", flexShrink: 0 }}>
@@ -226,6 +228,7 @@ function WebsiteManagement({ sites, refreshSites, triggerCapture, openScreenshot
   const [editSite, setEdit] = useState(null);
   const [form, setForm] = useState({ name: "", url: "" });
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
   const filtered = sites.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) || s.url.toLowerCase().includes(search.toLowerCase())
@@ -236,13 +239,19 @@ function WebsiteManagement({ sites, refreshSites, triggerCapture, openScreenshot
 
   async function save() {
     if (!form.name || !form.url) return;
+    
+    let targetUrl = form.url.trim();
+    if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
+    }
+    
     const url = editSite ? `/api/websites/${editSite.id}` : '/api/websites';
     const method = editSite ? 'PUT' : 'POST';
 
     await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form)
+      body: JSON.stringify({ ...form, url: targetUrl })
     });
 
     refreshSites();
@@ -266,6 +275,12 @@ function WebsiteManagement({ sites, refreshSites, triggerCapture, openScreenshot
     refreshSites();
   }
 
+  async function confirmDeleteAll() {
+    await fetch('/api/websites', { method: 'DELETE' });
+    setShowDeleteAllConfirm(false);
+    refreshSites();
+  }
+
   return (
     <div style={{ padding: "28px 32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
@@ -274,6 +289,13 @@ function WebsiteManagement({ sites, refreshSites, triggerCapture, openScreenshot
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{sites.length} websites configured</p>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
+          <button 
+            onClick={() => setShowDeleteAllConfirm(true)} 
+            disabled={sites.length === 0}
+            style={S.btn(sites.length === 0 ? "#1e2130" : "#450a0a", sites.length === 0 ? "#64748b" : "#fca5a5", { cursor: sites.length === 0 ? "not-allowed" : "pointer" })}
+          >
+            🗑️ Delete All
+          </button>
           <button onClick={triggerCapture} style={S.btn("#8b5cf6", "#fff")}>📸 Run Capture</button>
           <button onClick={openAdd} style={S.btn("#6366f1", "#fff")}>+ Add Website</button>
         </div>
@@ -349,6 +371,22 @@ function WebsiteManagement({ sites, refreshSites, triggerCapture, openScreenshot
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
               <button onClick={() => setDeleteTarget(null)} style={S.btn("#1e2130", "#94a3b8")}>Cancel</button>
               <button onClick={confirmDelete} style={S.btn("#450a0a", "#fca5a5")}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteAllConfirm && (
+        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
+          <div style={{ ...S.card, padding: 28, width: 400, textAlign: "center" }} className="animate-fade-in">
+            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fca5a5", marginBottom: 12 }}>Delete All Websites</h2>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+              Are you sure you want to delete <strong>all {sites.length}</strong> configured websites?<br />This action cannot be undone.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button onClick={() => setShowDeleteAllConfirm(false)} style={S.btn("#1e2130", "#94a3b8")}>Cancel</button>
+              <button onClick={confirmDeleteAll} style={S.btn("#450a0a", "#fca5a5")}>Yes, Delete All</button>
             </div>
           </div>
         </div>
@@ -1082,6 +1120,420 @@ function ExcelImport({ refreshSites }) {
   );
 }
 
+/* ─── User Management ──────────────────────────────── */
+function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", role: "Viewer" });
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchUsers = () => {
+    fetch('/api/users')
+      .then(r => r.json())
+      .then(setUsers)
+      .catch(err => console.error("Error fetching users:", err));
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const filtered = users.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase()) || 
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  async function save() {
+    if (!form.name || !form.email) {
+      setError("Name and Email are required.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form)
+      });
+      if (response.ok) {
+        fetchUsers();
+        setShowModal(false);
+        setForm({ name: "", email: "", role: "Viewer" });
+        setError(null);
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to create user.");
+      }
+    } catch (err) {
+      setError("Error saving user.");
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    try {
+      await fetch(`/api/users/${deleteTarget.id}`, { method: 'DELETE' });
+      setDeleteTarget(null);
+      fetchUsers();
+    } catch (err) {
+      console.error("Error deleting user:", err);
+    }
+  }
+
+  const roleBadge = (role) => {
+    switch(role.toLowerCase()) {
+      case 'admin': return badge("#4f46e533", "#a5b4fc", "Admin");
+      case 'editor': return badge("#0284c733", "#7dd3fc", "Editor");
+      default: return badge("#4b556333", "#d1d5db", "Viewer");
+    }
+  };
+
+  return (
+    <div style={{ padding: "28px 32px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Users</h1>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Manage monitor portal access and user roles</p>
+        </div>
+        <button onClick={() => { setShowModal(true); setError(null); }} style={S.btn("#6366f1", "#fff")}>+ Add User</button>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        <input placeholder="Search users by name or email..." value={search} onChange={e => setSearch(e.target.value)}
+          style={{ ...S.input, width: 320 }} />
+      </div>
+
+      {/* Table */}
+      <div style={{ ...S.card, overflow: "hidden" }}>
+        <table>
+          <thead>
+            <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+              {["Name", "Email Address", "Role", "Status", "Created Date", "Actions"].map(h => <th key={h} style={S.th}>{h}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((u, i) => (
+              <tr key={u.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                <td style={S.td({ fontWeight: 600, color: "#f1f5f9" })}>{u.name}</td>
+                <td style={S.td({ color: "#e2e8f0" })}>{u.email}</td>
+                <td style={S.td()}>{roleBadge(u.role)}</td>
+                <td style={S.td()}>{badge(u.status === "active" ? "#14532d" : "#1e2130", u.status === "active" ? "#86efac" : "#64748b", u.status === "active" ? "● Active" : "○ Inactive")}</td>
+                <td style={S.td({ color: "#94a3b8" })}>{u.created}</td>
+                <td style={{ padding: "10px 16px" }}>
+                  <button onClick={() => setDeleteTarget(u)} style={S.btn("#450a0a", "#fca5a5", { padding: "5px 10px", fontSize: 12 })}>Remove</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>No users found</div>}
+      </div>
+
+      {showModal && (
+        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+          <div style={{ ...S.card, padding: 28, width: 420 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 20 }}>Add User</h2>
+            {error && <div style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{error}</div>}
+            
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>Full Name</label>
+              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={S.input} placeholder="e.g. Amit Sharma" />
+            </div>
+            
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>Email Address</label>
+              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} style={S.input} placeholder="amit@company.com" />
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>Portal Role</label>
+              <select value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} 
+                style={{ background: "#0f1117", border: "1px solid #1e2130", borderRadius: 8, color: "#e2e8f0", padding: "9px 12px", fontSize: 13, width: "100%" }}>
+                <option value="Viewer">Viewer</option>
+                <option value="Editor">Editor</option>
+                <option value="Admin">Admin</option>
+              </select>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 22 }}>
+              <button onClick={() => setShowModal(false)} style={S.btn("#1e2130", "#94a3b8")}>Cancel</button>
+              <button onClick={save} style={S.btn("#6366f1", "#fff")}>Create User</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
+          <div style={{ ...S.card, padding: 28, width: 400, textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 12 }}>Remove User Access</h2>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+              Are you sure you want to remove access for <strong>{deleteTarget.name}</strong>?<br />They will no longer be able to view this portal.
+            </p>
+            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+              <button onClick={() => setDeleteTarget(null)} style={S.btn("#1e2130", "#94a3b8")}>Cancel</button>
+              <button onClick={confirmDelete} style={S.btn("#450a0a", "#fca5a5")}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Settings Management ───────────────────────────── */
+function SettingsManagement() {
+  const [settings, setSettings] = useState({ smtp: {}, recipients: [], schedules: [] });
+  const [smtpForm, setSmtpForm] = useState({ host: "", port: "", user: "", pass: "" });
+  const [newRecipient, setNewRecipient] = useState("");
+  const [newScheduleTime, setNewScheduleTime] = useState("09:00");
+  const [statusMessage, setStatusMessage] = useState(null);
+  const [statusError, setStatusError] = useState(null);
+  const [currentTime, setCurrentTime] = useState("");
+
+  useEffect(() => {
+    setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const fetchSettings = () => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(data => {
+        setSettings(data);
+        if (data.smtp) {
+          setSmtpForm({
+            host: data.smtp.host || "",
+            port: data.smtp.port || "",
+            user: data.smtp.user || "",
+            pass: data.smtp.pass || ""
+          });
+        }
+      })
+      .catch(err => console.error("Error fetching settings:", err));
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const triggerAlert = (msg, isErr = false) => {
+    if (isErr) {
+      setStatusError(msg);
+      setTimeout(() => setStatusError(null), 4000);
+    } else {
+      setStatusMessage(msg);
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  async function saveSettings(payload) {
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSettings(updated);
+        triggerAlert("Settings saved successfully!");
+      } else {
+        triggerAlert("Failed to save settings.", true);
+      }
+    } catch (err) {
+      triggerAlert("Error updating settings.", true);
+    }
+  }
+
+  const handleSmtpSave = (e) => {
+    e.preventDefault();
+    saveSettings({ smtp: smtpForm });
+  };
+
+  const handleAddRecipient = (e) => {
+    e.preventDefault();
+    if (!newRecipient || !/\S+@\S+\.\S+/.test(newRecipient)) {
+      triggerAlert("Please enter a valid recipient email address.", true);
+      return;
+    }
+    if (settings.recipients.some(r => r.email.toLowerCase() === newRecipient.toLowerCase())) {
+      triggerAlert("Recipient email already exists.", true);
+      return;
+    }
+    const updatedRecipients = [
+      ...settings.recipients,
+      { id: Date.now(), email: newRecipient.trim() }
+    ];
+    setNewRecipient("");
+    saveSettings({ recipients: updatedRecipients });
+  };
+
+  const handleDeleteRecipient = (id) => {
+    const updatedRecipients = settings.recipients.filter(r => r.id !== id);
+    saveSettings({ recipients: updatedRecipients });
+  };
+
+  const handleToggleSchedule = (id) => {
+    const updatedSchedules = settings.schedules.map(s => {
+      if (s.id === id) {
+        return { ...s, enabled: !s.enabled };
+      }
+      return s;
+    });
+    saveSettings({ schedules: updatedSchedules });
+  };
+
+  const handleAddSchedule = (e) => {
+    e.preventDefault();
+    if (!newScheduleTime) return;
+    if (!/^\d{2}:\d{2}$/.test(newScheduleTime)) {
+      triggerAlert("Invalid time format.", true);
+      return;
+    }
+    if (settings.schedules.some(s => s.time === newScheduleTime)) {
+      triggerAlert("Schedule time already exists.", true);
+      return;
+    }
+    const updatedSchedules = [
+      ...settings.schedules,
+      { id: Date.now(), time: newScheduleTime, enabled: true }
+    ].sort((a, b) => a.time.localeCompare(b.time));
+    saveSettings({ schedules: updatedSchedules });
+  };
+
+  const handleDeleteSchedule = (id) => {
+    const updatedSchedules = settings.schedules.filter(s => s.id !== id);
+    saveSettings({ schedules: updatedSchedules });
+  };
+
+  return (
+    <div style={{ padding: "28px 32px", maxWidth: 900 }}>
+      <div style={{ marginBottom: 22 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Settings</h1>
+        <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Configure email alerts, SMTP parameters, and scan schedules</p>
+      </div>
+
+      {statusMessage && (
+        <div style={{ ...S.card, borderColor: "#22c55e", background: "#14532d33", padding: "12px 18px", marginBottom: 20, color: "#86efac", fontSize: 13 }}>
+          ✅ {statusMessage}
+        </div>
+      )}
+      
+      {statusError && (
+        <div style={{ ...S.card, borderColor: "#ef4444", background: "#450a0a33", padding: "12px 18px", marginBottom: 20, color: "#fca5a5", fontSize: 13 }}>
+          ❌ {statusError}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ ...S.card, padding: 24 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#f1f5f9", marginBottom: 16 }}>📧 SMTP Configuration</h2>
+            <form onSubmit={handleSmtpSave}>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>SMTP Server Host</label>
+                <input value={smtpForm.host} onChange={e => setSmtpForm({ ...smtpForm, host: e.target.value })} style={S.input} placeholder="smtp.mailtrap.io" />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>SMTP Port</label>
+                <input value={smtpForm.port} onChange={e => setSmtpForm({ ...smtpForm, port: e.target.value })} style={S.input} placeholder="e.g. 587 or 2525" />
+              </div>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>SMTP Username</label>
+                <input value={smtpForm.user} onChange={e => setSmtpForm({ ...smtpForm, user: e.target.value })} style={S.input} placeholder="smtp-user@company.com" />
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>SMTP Password</label>
+                <input type="password" value={smtpForm.pass} onChange={e => setSmtpForm({ ...smtpForm, pass: e.target.value })} style={S.input} placeholder="••••••••••••" />
+              </div>
+              <button type="submit" style={S.btn("#6366f1", "#fff", { width: "100%" })}>Save SMTP Config</button>
+            </form>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          
+          <div style={{ ...S.card, padding: 24 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#f1f5f9", marginBottom: 12 }}>👥 Email Recipients</h2>
+            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 14 }}>These addresses will receive automated check reports as PDF attachments.</p>
+            
+            <form onSubmit={handleAddRecipient} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <input type="email" value={newRecipient} onChange={e => setNewRecipient(e.target.value)} placeholder="recipient@company.com" style={S.input} />
+              <button type="submit" style={S.btn("#8b5cf6", "#fff")}>Add</button>
+            </form>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
+              {settings.recipients.map(r => (
+                <div key={r.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0f1117", borderRadius: 8, padding: "8px 12px", border: "1px solid #1e213060" }}>
+                  <span style={{ fontSize: 13, color: "#e2e8f0" }}>{r.email}</span>
+                  <button onClick={() => handleDeleteRecipient(r.id)} style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: 16, cursor: "pointer", padding: "0 4px" }}>✕</button>
+                </div>
+              ))}
+              {settings.recipients.length === 0 && (
+                <div style={{ fontSize: 12, color: "#64748b", textAlign: "center", padding: 12 }}>No email recipients configured. Notifications are mock-only.</div>
+              )}
+            </div>
+          </div>
+
+          <div style={{ ...S.card, padding: 24 }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#f1f5f9", marginBottom: 12 }}>⏰ Background Scan Schedules</h2>
+            <p style={{ fontSize: 12, color: "#64748b", marginBottom: 6 }}>Define times of day (local server time) when automated captures will trigger.</p>
+            {currentTime && (
+              <p style={{ fontSize: 12, color: "#818cf8", marginBottom: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+                <span>🕒</span> Current Time: {currentTime}
+              </p>
+            )}
+
+            <form onSubmit={handleAddSchedule} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 16 }}>
+              <input type="time" value={newScheduleTime} onChange={e => setNewScheduleTime(e.target.value)} style={{ ...S.input, width: 130 }} />
+              <button type="submit" style={S.btn("#8b5cf6", "#fff")}>Add Time</button>
+            </form>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {settings.schedules.map(s => (
+                <div key={s.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0f1117", borderRadius: 8, padding: "8px 12px", border: "1px solid #1e213060" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <input type="checkbox" checked={s.enabled} onChange={() => handleToggleSchedule(s.id)} style={{ width: 15, height: 15, cursor: "pointer" }} />
+                    <span style={{ fontSize: 14, fontWeight: 600, color: s.enabled ? "#f1f5f9" : "#64748b" }}>
+                      {(() => {
+                        if (!s.time) return "";
+                        const [h, m] = s.time.split(":");
+                        const hour = parseInt(h, 10);
+                        const ampm = hour >= 12 ? "PM" : "AM";
+                        const displayHour = hour % 12 || 12;
+                        return `${displayHour.toString().padStart(2, '0')}:${m} ${ampm} (${s.time})`;
+                      })()}
+                    </span>
+                  </div>
+                  <button onClick={() => handleDeleteSchedule(s.id)} style={{ background: "transparent", border: "none", color: "#ef4444", fontSize: 16, cursor: "pointer", padding: "0 4px" }}>✕</button>
+                </div>
+              ))}
+              {settings.schedules.length === 0 && (
+                <div style={{ fontSize: 12, color: "#64748b", textAlign: "center", padding: 12 }}>No automated background schedules configured.</div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 /* ─── App Root ──────────────────────────────────────── */
 export default function App() {
   const [page, setPage] = useState("dashboard");
@@ -1139,6 +1591,8 @@ export default function App() {
     websites: <WebsiteManagement sites={sites} refreshSites={fetchSites} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />,
     reports: <Reports reports={reports} openScreenshot={openScreenshot} />,
     excel: <ExcelImport refreshSites={fetchSites} />,
+    users: <UserManagement />,
+    settings: <SettingsManagement />,
   };
 
   return (

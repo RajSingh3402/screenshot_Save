@@ -17,3 +17,5 @@ db.json
 # Environment / Logs
 .env*
 *.log
+server_logs.txt
+

@@ -5,6 +5,21 @@ const path = require('path');
 const puppeteer = require('puppeteer');
 const nodemailer = require('nodemailer');
 const next = require('next');
+const cron = require('node-cron');
+
+// Redirect console logs to a log file for remote debugging
+const logFile = path.join(__dirname, 'server_logs.txt');
+const logStream = fs.createWriteStream(logFile, { flags: 'a' });
+console.log = function(...args) {
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+  logStream.write(`[LOG ${new Date().toLocaleTimeString()}] ${msg}\n`);
+  process.stdout.write(msg + '\n');
+};
+console.error = function(...args) {
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+  logStream.write(`[ERR ${new Date().toLocaleTimeString()}] ${msg}\n`);
+  process.stderr.write(msg + '\n');
+};
 
 // Excel & URL check utilities
 const { parseExcelBuffer } = require('./src/utils/excelParser.cjs');
@@ -141,7 +156,10 @@ app.post('/api/excel/process', async (req, res) => {
       const batch = parsedRows.slice(i, i + batchSize);
       const batchPromises = batch.map(async (row, index) => {
         const rowIdx = i + index;
-        const urlToCheck = row.url;
+        let urlToCheck = row.url ? row.url.trim() : '';
+        if (urlToCheck && !/^https?:\/\//i.test(urlToCheck)) {
+          urlToCheck = 'https://' + urlToCheck;
+        }
         
         let checkResult = {
           status: 'failed',
@@ -221,10 +239,14 @@ app.get('/api/websites', (req, res) => {
 
 app.post('/api/websites', (req, res) => {
   const db = readDb();
+  let targetUrl = req.body.url ? req.body.url.trim() : '';
+  if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = 'https://' + targetUrl;
+  }
   const newSite = {
     id: Date.now(),
     name: req.body.name,
-    url: req.body.url,
+    url: targetUrl,
     status: 'active',
     lastStatus: 'success',
     lastCapture: '-',
@@ -244,12 +266,25 @@ app.put('/api/websites/:id', (req, res) => {
     return res.status(404).json({ error: 'Website not found' });
   }
   
+  let targetUrl = req.body.url ? req.body.url.trim() : '';
+  if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = 'https://' + targetUrl;
+  }
+
   db.websites[siteIndex] = {
     ...db.websites[siteIndex],
-    ...req.body
+    ...req.body,
+    ...(targetUrl ? { url: targetUrl } : {})
   };
   writeDb(db);
   res.json(db.websites[siteIndex]);
+});
+
+app.delete('/api/websites', (req, res) => {
+  const db = readDb();
+  db.websites = [];
+  writeDb(db);
+  res.json({ message: 'All websites deleted successfully' });
 });
 
 app.delete('/api/websites/:id', (req, res) => {
@@ -264,15 +299,21 @@ app.post('/api/websites/bulk', (req, res) => {
   const db = readDb();
   db.websites = db.websites || [];
   const incoming = Array.isArray(req.body) ? req.body : [];
-  const newSites = incoming.map((site, index) => ({
-    id: Date.now() + index,
-    name: site.name || 'Unnamed Site',
-    url: site.url || '',
-    status: 'active',
-    lastStatus: 'success',
-    lastCapture: '-',
-    error: null
-  }));
+  const newSites = incoming.map((site, index) => {
+    let targetUrl = site.url ? site.url.trim() : '';
+    if (targetUrl && !/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
+    }
+    return {
+      id: Date.now() + index,
+      name: site.name || 'Unnamed Site',
+      url: targetUrl,
+      status: 'active',
+      lastStatus: 'success',
+      lastCapture: '-',
+      error: null
+    };
+  });
   db.websites.unshift(...newSites); // Prepend bulk websites
   writeDb(db);
   res.status(201).json(newSites);
@@ -391,6 +432,7 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
   try {
     browser = await puppeteer.launch({
       headless: true,
+      ignoreHTTPSErrors: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
   } catch (err) {
@@ -404,23 +446,28 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
   const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-  const reportDetails = [];
-  let successCount = 0;
-  let failedCount = 0;
+  const reportDetails = new Array(activeSites.length);
+  let completedCount = 0;
+  let currentActiveCaptures = [];
 
-  for (let i = 0; i < activeSites.length; i++) {
-    const site = activeSites[i];
-    captureProgress.current = i + 1;
-    captureProgress.status = `Capturing site ${i + 1} of ${activeSites.length}: ${site.name}...`;
-    console.log(`[${i + 1}/${activeSites.length}] Monitoring ${site.name} (${site.url})...`);
+  const updateProgressStatus = () => {
+    if (completedCount < activeSites.length) {
+      const activeNames = currentActiveCaptures.join(', ');
+      captureProgress.status = `Checked ${completedCount} of ${activeSites.length}. Active: ${activeNames}...`;
+    }
+  };
+
+  const captureWorker = async (site, index) => {
+    currentActiveCaptures.push(site.name);
+    captureProgress.current = completedCount;
+    updateProgressStatus();
+    console.log(`[Start] Monitoring ${site.name} (${site.url})...`);
 
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 800 });
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    
-    // Set standard timeout (30s)
     await page.setDefaultNavigationTimeout(30000);
-    
+
     let loadTime = 0;
     let siteSuccess = true;
     let siteError = null;
@@ -430,6 +477,99 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
 
     try {
       const response = await page.goto(site.url, { waitUntil: 'load' });
+      
+      // Simulate user interaction to bypass optimization plugins that delay JS execution until user interaction
+      try {
+        await page.mouse.move(100, 100);
+        await page.evaluate(() => {
+          window.scrollBy(0, 50);
+          const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+          events.forEach(evt => {
+            window.dispatchEvent(new Event(evt));
+          });
+        });
+        await page.mouse.move(200, 200);
+        await page.evaluate(() => {
+          window.scrollBy(0, -50);
+        });
+      } catch (interactionErr) {
+        console.log(`Failed to simulate interaction for ${site.name}:`, interactionErr.message);
+      }
+
+      // Wait for network idle to ensure resources/APIs are loaded (especially after dynamic scripts trigger)
+      try {
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 });
+      } catch (idleErr) {
+        console.log(`waitForNetworkIdle timed out for ${site.name}, proceeding anyway...`);
+      }
+
+      // Dynamically wait up to 5 seconds for any loader/preloader overlay elements to disappear
+      try {
+        await page.evaluate(async () => {
+          const loaderSelectors = [
+            '#preloader', '.preloader', '#loader', '.loader', 
+            '#loading', '.loading', '.site-preloader', '.site-loader', 
+            '.page-loader', '#page-preloader', '.gt3_preloader',
+            '.loading-screen', '.spinner-wrapper', '#spinner-wrapper',
+            '.preloader-wrapper', '#preloader-wrapper'
+          ];
+          
+          const getVisibleLoaders = () => {
+            return loaderSelectors.flatMap(selector => {
+              const elements = Array.from(document.querySelectorAll(selector));
+              return elements.filter(el => {
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                return (
+                  el.offsetParent !== null &&
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  parseFloat(style.opacity) > 0.1 &&
+                  rect.width > 10 && rect.height > 10
+                );
+              });
+            });
+          };
+
+          const start = Date.now();
+          while (Date.now() - start < 5000) {
+            const visibleLoaders = getVisibleLoaders();
+            if (visibleLoaders.length === 0) {
+              break;
+            }
+            await new Promise(r => setTimeout(r, 200));
+          }
+        });
+      } catch (err) {
+        console.log(`Preloader visibility polling failed for ${site.name}:`, err.message);
+      }
+
+      // Add a short 1.5-second stabilization buffer to let page animations/layout settle
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Force hide any remaining preloader/spinner elements in case they are stuck
+      try {
+        await page.evaluate(() => {
+          const loaderSelectors = [
+            '#preloader', '.preloader', '#loader', '.loader', 
+            '#loading', '.loading', '.site-preloader', '.site-loader', 
+            '.page-loader', '#page-preloader', '.gt3_preloader',
+            '.loading-screen', '.spinner-wrapper', '#spinner-wrapper',
+            '.preloader-wrapper', '#preloader-wrapper'
+          ];
+          loaderSelectors.forEach(selector => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+              el.style.display = 'none';
+              el.style.opacity = '0';
+              el.style.visibility = 'hidden';
+            });
+          });
+        });
+      } catch (err) {
+        console.log(`Failed to hide loader elements for ${site.name}:`, err.message);
+      }
+
       loadTime = Date.now() - startTime;
       
       const status = response ? response.status() : 200;
@@ -437,7 +577,6 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
         siteSuccess = false;
         siteError = `HTTP Error ${status}`;
       } else {
-        // Successful response, take page screenshot
         await page.screenshot({ path: screenshotPath, fullPage: false });
       }
     } catch (err) {
@@ -445,6 +584,38 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
       if (err.message.includes('timeout') && currentUrl && currentUrl !== 'about:blank') {
         try {
           console.log(`Navigation timed out for ${site.name}, attempting fallback screenshot...`);
+          // Try simulating interaction on timeout fallback as well
+          try {
+            await page.mouse.move(100, 100);
+            await page.evaluate(() => {
+              const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+              events.forEach(evt => {
+                window.dispatchEvent(new Event(evt));
+              });
+            });
+          } catch (e) {}
+          // Wait a 3-second buffer before capture fallback screenshot
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          // Attempt to hide common preloader/spinner elements on fallback
+          try {
+            await page.evaluate(() => {
+              const loaderSelectors = [
+                '#preloader', '.preloader', '#loader', '.loader', 
+                '#loading', '.loading', '.site-preloader', '.site-loader', 
+                '.page-loader', '#page-preloader', '.gt3_preloader',
+                '.loading-screen', '.spinner-wrapper', '#spinner-wrapper',
+                '.preloader-wrapper', '#preloader-wrapper'
+              ];
+              loaderSelectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach(el => {
+                  el.style.display = 'none';
+                  el.style.opacity = '0';
+                  el.style.visibility = 'hidden';
+                });
+              });
+            });
+          } catch (e) {}
           await page.screenshot({ path: screenshotPath, fullPage: false });
           loadTime = Date.now() - startTime;
           siteSuccess = true;
@@ -472,7 +643,7 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
       db.websites[siteIndex].lastCaptureImage = siteSuccess ? filename : null;
     }
 
-    reportDetails.push({
+    reportDetails[index] = {
       id: site.id,
       name: site.name,
       url: site.url,
@@ -480,14 +651,41 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
       loadTime: siteSuccess ? loadTime : null,
       error: siteSuccess ? null : siteError,
       screenshot: siteSuccess ? filename : null
-    });
+    };
 
-    if (siteSuccess) successCount++;
-    else failedCount++;
-  }
+    completedCount++;
+    currentActiveCaptures = currentActiveCaptures.filter(name => name !== site.name);
+    captureProgress.current = completedCount;
+    updateProgressStatus();
+    console.log(`[Finish] Monitored ${site.name}. Success: ${siteSuccess}`);
+  };
+
+  // Run up to 4 captures concurrently to speed up the process significantly
+  const concurrencyLimit = 4;
+  const queue = [...activeSites];
+  const workers = Array(Math.min(concurrencyLimit, queue.length)).fill(null).map(async () => {
+    while (queue.length > 0) {
+      const site = queue.shift();
+      const index = activeSites.indexOf(site);
+      await captureWorker(site, index);
+    }
+  });
+
+  await Promise.all(workers);
 
   // Close monitoring browser instance
   await browser.close();
+
+  // Calculate success / failed counts
+  let successCount = 0;
+  let failedCount = 0;
+  for (const item of reportDetails) {
+    if (item && item.status === 'success') {
+      successCount++;
+    } else {
+      failedCount++;
+    }
+  }
 
   captureProgress.status = 'Generating PDF report...';
   console.log('Generating A4 PDF Report...');
@@ -534,7 +732,7 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
         .page-break-before { page-break-before: always; }
         .screenshot-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 5px; margin-bottom: 8px; font-size: 13px; font-weight: bold; color: #374151; }
         .screenshot-img-container { text-align: center; border: 1px solid #e5e7eb; border-radius: 6px; padding: 6px; background: #f9fafb; }
-        .screenshot-img { max-width: 100%; max-height: 300px; object-fit: contain; }
+        .screenshot-img { max-width: 100%; max-height: 250px; object-fit: contain; }
       </style>
     </head>
     <body>
@@ -604,7 +802,7 @@ async function runCaptureSession(triggerName = 'Manual Trigger') {
         const fullImagePath = path.join(screenshotsDir, d.screenshot);
         if (fs.existsSync(fullImagePath)) {
           const base64Image = fs.readFileSync(fullImagePath).toString('base64');
-          const pageBreakClass = (embeddedCount % 2 === 0) ? 'page-break-before' : '';
+          const pageBreakClass = (embeddedCount % 3 === 0) ? 'page-break-before' : '';
           reportHtml += `
             <div class="screenshot-section ${pageBreakClass}">
               <div class="screenshot-header">${i + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
@@ -738,7 +936,7 @@ Attachment Saved: ${mailOptions.attachments[0].filename}
 
 /* ─── Background Scheduler ───────────────────────────── */
 
-setInterval(() => {
+cron.schedule('* * * * *', () => {
   const db = readDb();
   if (!db.settings || !db.settings.schedules) return;
 
@@ -758,7 +956,7 @@ setInterval(() => {
       console.error('Scheduled capture check failed:', err);
     });
   }
-}, 60000); // Check once every minute
+});
 
   // Next.js fallback request handler
   app.all('*', (req, res) => {
