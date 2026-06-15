@@ -1,31 +1,45 @@
 {
   "name": "sitewatch-dashboard",
-  "version": "1.0.0",
-  "description": "Real-life SiteWatch website screenshot monitoring portal",
-  "main": "server.cjs",
+  "version": "2.0.0",
+  "description": "SiteWatch — website screenshot monitoring portal (Next.js)",
   "type": "module",
+  "packageManager": "pnpm@11.1.2",
   "scripts": {
-    "dev": "node server.cjs",
+    "dev": "next dev",
     "build": "next build",
-    "start": "node server.cjs"
+    "start": "next start -p 8080",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@prisma/adapter-mariadb": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "@tailwindcss/postcss": "^4.3.0",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "mariadb": "^3.5.3",
-    "mysql2": "^3.22.5",
+    "@tanstack/react-query": "^5.62.7",
     "next": "^16.2.9",
     "node-cron": "^4.2.1",
     "nodemailer": "^6.9.16",
-    "postcss": "^8.5.15",
     "prisma": "^7.8.0",
     "puppeteer": "^22.12.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-hook-form": "^7.54.2",
+    "xlsx": "^0.18.5",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.0",
+    "@tanstack/react-query-devtools": "^5.62.7",
+    "@types/node": "^22.10.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.17",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "dotenv": "^16.4.7",
+    "postcss": "^8.5.15",
     "tailwindcss": "^4.3.0",
-    "xlsx": "^0.18.5"
+    "typescript": "^5.7.2"
   }
 }

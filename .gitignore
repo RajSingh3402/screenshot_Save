@@ -3,6 +3,7 @@ node_modules/
 
 # Next.js build output
 .next/
+tsconfig.tsbuildinfo
 
 # Generated screenshots, reports and mock emails
 public/screenshots/*

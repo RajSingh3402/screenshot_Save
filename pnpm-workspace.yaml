@@ -1,0 +1,8 @@
+# pnpm 11 reads build-script approvals from here. These packages have
+# install/build scripts we trust (Chromium download, Prisma engines, native
+# image libs), so they are allowed to run.
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+  puppeteer: true
+  sharp: true
