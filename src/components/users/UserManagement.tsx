@@ -53,12 +53,13 @@ export function UserManagement() {
   });
 
   return (
-    <div className="p-8 max-w-[1180px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1180px] mx-auto">
       <PageHeader
         title="Users"
         subtitle="Manage monitor portal access and user roles"
         actions={
           <Button
+            className="w-full sm:w-auto"
             onClick={() => {
               form.reset({ name: '', email: '', role: 'Viewer' });
               setServerError(null);
@@ -70,7 +71,7 @@ export function UserManagement() {
         }
       />
 
-      <div className="relative mb-4 w-80">
+      <div className="relative mb-4 w-full sm:w-80">
         <SearchIcon width={16} height={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
         <Input
           placeholder="Search users by name or email…"

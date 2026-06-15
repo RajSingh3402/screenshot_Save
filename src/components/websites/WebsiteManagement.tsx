@@ -60,26 +60,26 @@ export function WebsiteManagement() {
   });
 
   return (
-    <div className="p-8 max-w-[1180px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1180px] mx-auto">
       <PageHeader
         title="Websites"
         subtitle={`${sites.length} websites configured`}
         actions={
           <>
-            <Button variant="danger" onClick={() => setShowDeleteAll(true)} disabled={sites.length === 0}>
+            <Button variant="danger" onClick={() => setShowDeleteAll(true)} disabled={sites.length === 0} className="w-full sm:w-auto">
               <TrashIcon width={16} height={16} /> Delete All
             </Button>
-            <Button variant="secondary" onClick={() => triggerCapture.mutate()} disabled={triggerCapture.isPending}>
+            <Button variant="secondary" onClick={() => triggerCapture.mutate()} disabled={triggerCapture.isPending} className="w-full sm:w-auto">
               <CameraIcon width={16} height={16} /> Run Capture
             </Button>
-            <Button onClick={openAdd}>
+            <Button onClick={openAdd} className="w-full sm:w-auto">
               <PlusIcon width={16} height={16} /> Add Website
             </Button>
           </>
         }
       />
 
-      <div className="relative mb-4 w-72">
+      <div className="relative mb-4 w-full sm:w-72">
         <SearchIcon width={16} height={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
         <Input
           placeholder="Search websites…"

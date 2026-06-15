@@ -171,7 +171,7 @@ export function ExcelImport() {
   const displayedLogs = logs.slice(-6);
 
   return (
-    <div className="p-8 max-w-[1180px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1180px] mx-auto">
       <PageHeader
         title="Excel Bulk Import"
         subtitle="Upload .xlsx / .xls spreadsheets of websites, verify the links, then add them to SiteWatch."
@@ -284,8 +284,8 @@ export function ExcelImport() {
 
           {results.length > 0 && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex gap-2.5">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full md:w-auto">
                   <Input
                     placeholder="Search results…"
                     value={search}
@@ -293,7 +293,7 @@ export function ExcelImport() {
                       setSearch(e.target.value);
                       setPage(1);
                     }}
-                    className="w-56"
+                    className="w-full sm:w-56"
                   />
                   <Select
                     value={statusFilter}
@@ -301,22 +301,23 @@ export function ExcelImport() {
                       setStatusFilter(e.target.value);
                       setPage(1);
                     }}
-                    className="w-44"
+                    className="w-full sm:w-44"
                   >
                     <option value="all">All Statuses</option>
                     <option value="success">Success / Reachable</option>
                     <option value="failed">Failed / Broken</option>
                   </Select>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs text-ink-soft">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+                  <span className="text-xs text-ink-soft text-center sm:text-left">
                     Selected <strong>{selectedIds.size}</strong> of <strong>{results.length}</strong>
                   </span>
-                  <Button variant="secondary" onClick={handleImport} disabled={selectedIds.size === 0}>
+                  <Button variant="secondary" onClick={handleImport} disabled={selectedIds.size === 0} className="w-full sm:w-auto">
                     Add Selected to Monitoring
                   </Button>
                   <Button
                     variant="ghost"
+                    className="w-full sm:w-auto"
                     onClick={() => {
                       setResults([]);
                       setFile(null);

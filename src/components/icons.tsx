@@ -154,3 +154,10 @@ export const UploadIcon = (p: IconProps) => (
     <path d="M4 15v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
   </Base>
 );
+
+export const MenuIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M4 12h16M4 6h16M4 18h16" />
+  </Base>
+);
+

@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  CloseIcon,
   DashboardIcon,
   DocumentIcon,
   GlobeIcon,
@@ -22,18 +23,37 @@ const NAV: { id: PageKey; label: string; Icon: typeof DashboardIcon }[] = [
   { id: 'settings', label: 'Settings', Icon: SettingsIcon },
 ];
 
-export function Sidebar({ page, setPage }: { page: PageKey; setPage: (p: PageKey) => void }) {
+export function Sidebar({
+  page,
+  setPage,
+  onClose,
+}: {
+  page: PageKey;
+  setPage: (p: PageKey) => void;
+  onClose?: () => void;
+}) {
   return (
-    <aside className="w-60 shrink-0 bg-surface border-r border-line flex flex-col">
+    <aside className="w-60 shrink-0 bg-surface border-r border-line flex flex-col h-full">
       <div className="px-5 py-5 border-b border-line">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand text-white grid place-items-center shadow-sm">
-            <RadarIcon width={22} height={22} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand text-white grid place-items-center shadow-sm">
+              <RadarIcon width={22} height={22} />
+            </div>
+            <div>
+              <div className="font-display font-semibold text-ink leading-tight">SiteWatch</div>
+              <div className="text-[11px] text-ink-faint">Monitor Portal</div>
+            </div>
           </div>
-          <div>
-            <div className="font-display font-semibold text-ink leading-tight">SiteWatch</div>
-            <div className="text-[11px] text-ink-faint">Monitor Portal</div>
-          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="lg:hidden p-1.5 rounded-lg text-ink-faint hover:bg-surface-2 hover:text-ink transition-colors cursor-pointer"
+              aria-label="Close menu"
+            >
+              <CloseIcon width={18} height={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -43,7 +63,10 @@ export function Sidebar({ page, setPage }: { page: PageKey; setPage: (p: PageKey
           return (
             <button
               key={id}
-              onClick={() => setPage(id)}
+              onClick={() => {
+                setPage(id);
+                if (onClose) onClose();
+              }}
               className={cn(
                 'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors cursor-pointer',
                 active

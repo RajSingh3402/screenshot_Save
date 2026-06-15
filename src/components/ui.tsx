@@ -177,25 +177,29 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
       <div>
-        <h1 className="text-3xl font-display font-semibold text-ink tracking-tight">{title}</h1>
-        {subtitle && <p className="text-sm text-ink-soft mt-1.5">{subtitle}</p>}
+        <h1 className="text-2xl sm:text-3xl font-display font-semibold text-ink tracking-tight">{title}</h1>
+        {subtitle && <p className="text-xs sm:text-sm text-ink-soft mt-1.5">{subtitle}</p>}
       </div>
-      {actions && <div className="flex items-center gap-2.5 flex-wrap">{actions}</div>}
+      {actions && (
+        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto shrink-0">
+          {actions}
+        </div>
+      )}
     </div>
   );
 }
 
 /* ─── Table cell helpers ─────────────────────────────── */
 
-export const thClass = 'text-left px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-ink-faint';
-export const tdClass = 'px-4 py-3 text-sm align-middle';
+export const thClass = 'text-left px-2 sm:px-4 py-2.5 sm:py-3 text-[11px] font-semibold uppercase tracking-wider text-ink-faint';
+export const tdClass = 'px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm align-middle';
 
 export function EmptyRow({ colSpan, children }: { colSpan: number; children: ReactNode }) {
   return (
     <tr>
-      <td colSpan={colSpan} className="px-4 py-12 text-center text-sm text-ink-faint">
+      <td colSpan={colSpan} className="px-2 sm:px-4 py-10 sm:py-12 text-center text-xs sm:text-sm text-ink-faint">
         {children}
       </td>
     </tr>

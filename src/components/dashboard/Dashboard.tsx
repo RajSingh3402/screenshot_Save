@@ -41,7 +41,7 @@ export function Dashboard() {
   const today = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
-    <div className="p-8 max-w-[1180px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1180px] mx-auto">
       <PageHeader
         title="Dashboard"
         subtitle={`Today · ${today} · Live screenshot monitors`}
@@ -52,7 +52,7 @@ export function Dashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {stats.map(({ label, value, sub, accent, Icon }) => (
           <Card key={label} className="p-5">
             <div className="flex items-start justify-between">

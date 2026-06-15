@@ -20,7 +20,7 @@ export function Reports() {
   const [sel, setSel] = useState<Report | null>(null);
 
   return (
-    <div className="p-8 max-w-[1180px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1180px] mx-auto">
       <PageHeader title="Reports" subtitle="All generated PDF reports · click a row for details" />
 
       <div className={`grid gap-5 ${sel ? 'grid-cols-1 lg:grid-cols-[1fr_420px]' : 'grid-cols-1'}`}>

@@ -88,7 +88,7 @@ export function SettingsManagement() {
   }
 
   return (
-    <div className="p-8 max-w-[980px] mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[980px] mx-auto">
       <PageHeader title="Settings" subtitle="Configure email alerts, SMTP parameters and scan schedules" />
 
       {msg && <Card className="border-success/40 bg-success-soft/60 p-3.5 mb-5 text-sm text-success">✅ {msg}</Card>}
