@@ -19,3 +19,5 @@ db.json
 *.log
 server_logs.txt
 
+
+/src/generated/prisma
