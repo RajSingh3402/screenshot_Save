@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// 1. Websites Model
+model Website {
+  id               BigInt  @id
+  name             String  @db.VarChar(255)
+  url              String  @db.VarChar(2048)
+  status           String  @default("active") @db.VarChar(50)
+  lastStatus       String? @db.VarChar(50)
+  lastCapture      String? @db.VarChar(50)
+  error            String? @db.Text
+  lastCaptureImage String? @db.VarChar(255)
+
+  @@map("websites")
+}
+
+// 2. Reports Model
+model Report {
+  id      BigInt         @id
+  date    String         @db.VarChar(50)
+  time    String         @db.VarChar(50)
+  total   Int
+  success Int
+  failed  Int
+  file    String         @db.VarChar(255)
+  details ReportDetail[]
+
+  @@map("reports")
+}
+
+// 3. Report Details Model
+model ReportDetail {
+  id         Int     @id @default(autoincrement())
+  reportId   BigInt  @map("report_id")
+  websiteId  BigInt  @map("website_id")
+  name       String  @db.VarChar(255)
+  url        String  @db.VarChar(2048)
+  status     String  @db.VarChar(50)
+  loadTime   Int?
+  error      String? @db.Text
+  screenshot String? @db.VarChar(255)
+  report     Report  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId], map: "idx_report_details_report_id")
+  @@map("report_details")
+}
+
+// 4. Users Model
+model User {
+  id        BigInt   @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  email     String   @unique @db.VarChar(255)
+  password  String   @default("") @db.VarChar(255)
+  role      String   @default("Viewer") @db.VarChar(100)
+  status    String   @default("Active") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// 5. Schedules Model
+model Schedule {
+  id      BigInt  @id
+  time    String  @db.VarChar(5)
+  enabled Boolean @default(true)
+
+  @@map("schedules")
+}
+
+// 6. Email Recipients Model
+model EmailRecipient {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("email_recipients")
+}
+
+// 7. SMTP Settings Model
+model SmtpSetting {
+  id   Int     @id @default(1)
+  host String? @db.VarChar(255)
+  port String? @db.VarChar(50)
+  user String? @db.VarChar(255)
+  pass String? @db.VarChar(255)
+
+  @@map("smtp_settings")
+}
+
+// 8. SMTP Config Model (For Client App Settings)
+model SmtpConfig {
+  id        Int      @id @default(autoincrement())
+  host      String   @db.VarChar(255)
+  port      Int
+  username  String   @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("smtp_configs")
+}
+
+// 9. Scan Execution Logs Model
+model ScanExecutionLog {
+  id           Int      @id @default(autoincrement())
+  scheduleTime String   @db.VarChar(5)
+  executedAt   DateTime @default(now()) @map("executed_at")
+  status       String   @db.VarChar(50)
+  message      String   @db.Text
+
+  @@map("scan_execution_logs")
+}
+
+// 10. Metrics Model
+model Metric {
+  id                   Int      @id @default(autoincrement())
+  websiteId            BigInt   @map("website_id")
+  url                  String   @db.VarChar(2048)
+  name                 String   @db.VarChar(255)
+  timestamp            DateTime @default(now()) @map("timestamp")
+  status               String   @db.VarChar(50)
+  responseTime         Int?     @map("response_time")
+  sslStatus            String   @db.VarChar(50) @map("ssl_status")
+  sslExpiryDate        DateTime? @map("ssl_expiry_date")
+  sslDaysRemaining     Int?     @map("ssl_days_remaining")
+  sslWarning           Boolean  @default(false) @map("ssl_warning")
+  domainExpiryDate     DateTime? @map("domain_expiry_date")
+  domainDaysRemaining  Int?     @map("domain_days_remaining")
+  domainWarning        Boolean  @default(false) @map("domain_warning")
+  safeBrowsingStatus   String   @db.VarChar(50) @map("safe_browsing_status")
+  malwareStatus        String   @db.VarChar(50) @map("malware_status")
+  phishingStatus       String   @db.VarChar(50) @map("phishing_status")
+  blacklistStatus      String   @db.VarChar(50) @map("blacklist_status")
+  screenshotPath       String?  @db.VarChar(255) @map("screenshot_path")
+
+  @@index([websiteId])
+  @@index([timestamp])
+  @@map("metrics")
+}
+

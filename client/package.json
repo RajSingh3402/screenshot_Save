@@ -1,0 +1,35 @@
+{
+  "name": "sitewatch-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@prisma/adapter-mariadb": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "@tailwindcss/postcss": "^4.3.0",
+    "dotenv": "^17.4.2",
+    "jose": "^6.2.3",
+    "mariadb": "^3.5.3",
+    "next": "^16.2.9",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.10.1",
+    "postcss": "^8.5.15",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.1",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "prisma": "^7.8.0",
+    "typescript": "^5.3.3"
+  }
+}
