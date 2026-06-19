@@ -20,15 +20,10 @@ dist/
 server/.env
 
 # Application Generated Files (Screenshots/PDFs/Mocks)
-public/screenshots/*
-!public/screenshots/.gitkeep
-public/reports/*
-!public/reports/.gitkeep
 server/public/screenshots/*
 !server/public/screenshots/.gitkeep
 server/public/reports/*
 !server/public/reports/.gitkeep
-mock_emails/
 server/mock_emails/
 
 # Logs and Diagnostics
