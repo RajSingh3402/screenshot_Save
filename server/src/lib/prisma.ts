@@ -31,6 +31,9 @@ export const prisma = new PrismaClient({
 // to prevent JSON serialization errors (TypeError: Do not know how to serialize a BigInt)
 export function sanitize(val: any): any {
   if (val === null || val === undefined) return val;
+  if (val instanceof Date) {
+    return val;
+  }
   if (typeof val === 'bigint') {
     return Number(val);
   }
