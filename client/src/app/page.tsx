@@ -149,7 +149,7 @@ export default function App() {
   return (
     <div style={{ display: "flex", height: "100vh", background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter','Segoe UI',sans-serif", overflow: "hidden" }}>
       <Sidebar page={page} setPage={setPage} user={currentUser} onLogout={handleLogout} />
-      
+
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
         {isAllowed ? (
           pages[page] || pages.dashboard
