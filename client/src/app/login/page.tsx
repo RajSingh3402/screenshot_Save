@@ -50,9 +50,6 @@ export default function LoginPage() {
     }
   }
 
-  // TO UNCOMMENT THE LOGIN PAGE: Delete the "return null;" line below:
-  return null;
-
   return (
     <div style={{
       display: 'flex',
@@ -89,10 +86,6 @@ export default function LoginPage() {
       }} />
 
       {/* Login Card */}
-      {/* 
-        TO UNCOMMENT: Change `false && (` to `true && (` (or remove the wrapper) to show the login card again.
-      */}
-      {false && (
       <div style={{
         ...S.card,
         width: '420px',
@@ -204,7 +197,6 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-      )}
     </div>
   );
 }
