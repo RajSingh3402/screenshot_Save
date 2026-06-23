@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * GET /api/settings/recipients
  * Fetches all email recipients.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const recipients = await prisma.emailRecipient.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -24,8 +30,13 @@ export async function GET() {
  * POST /api/settings/recipients
  * Adds a new email recipient.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { email } = body;
 

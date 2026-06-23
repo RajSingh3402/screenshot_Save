@@ -43,3 +43,27 @@ export const prisma =
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+// Helper to sanitize Prisma outputs by recursively converting BigInt values to JS Numbers
+// to prevent JSON serialization errors (TypeError: Do not know how to serialize a BigInt)
+export function sanitize(val: any): any {
+  if (val === null || val === undefined) return val;
+  if (val instanceof Date) {
+    return val;
+  }
+  if (typeof val === 'bigint') {
+    return Number(val);
+  }
+  if (Array.isArray(val)) {
+    return val.map(sanitize);
+  }
+  if (typeof val === 'object') {
+    const res: any = {};
+    for (const key of Object.keys(val)) {
+      res[key] = sanitize(val[key]);
+    }
+    return res;
+  }
+  return val;
+}
+

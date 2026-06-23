@@ -1,15 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * PUT /api/settings/schedules/[id]
  * Updates the enabled state of a background scan schedule.
  */
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const resolvedParams = await params;
     const scheduleId = BigInt(resolvedParams.id);
     const body = await request.json();
@@ -60,10 +66,15 @@ export async function PUT(
  * Deletes a scan schedule by ID.
  */
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const resolvedParams = await params;
     const scheduleId = BigInt(resolvedParams.id);
 

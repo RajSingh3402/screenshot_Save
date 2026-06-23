@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * GET /api/settings/schedules
  * Fetches all automated background scan schedules.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const schedules = await prisma.schedule.findMany({
       orderBy: { time: 'asc' },
     });
@@ -32,8 +38,13 @@ export async function GET() {
  * POST /api/settings/schedules
  * Adds a new automated scan schedule time.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { time } = body;
 

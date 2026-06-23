@@ -1,15 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * DELETE /api/settings/recipients/[id]
  * Deletes an email recipient by ID.
  */
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const resolvedParams = await params;
     const recipientId = parseInt(resolvedParams.id, 10);
 

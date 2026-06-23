@@ -1,12 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * GET /api/settings/smtp
  * Fetches the latest SMTP configuration.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const config = await prisma.smtpConfig.findFirst({
       orderBy: { id: 'desc' },
     });
@@ -24,8 +30,13 @@ export async function GET() {
  * POST /api/settings/smtp
  * Creates a new SMTP configuration.
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { host, port, username, password } = body;
 
@@ -67,8 +78,13 @@ export async function POST(request: Request) {
  * PUT /api/settings/smtp
  * Updates the existing SMTP configuration, or creates one if it doesn't exist.
  */
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
+
     const body = await request.json();
     const { host, port, username, password } = body;
 

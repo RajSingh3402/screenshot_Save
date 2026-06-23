@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * GET /api/settings/execution-logs
  * Fetches all automated scan execution logs ordered by time descending.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     const logs = await prisma.scanExecutionLog.findMany({
       orderBy: { executedAt: 'desc' },
       take: 50, // Keep it fast, only return the latest 50 logs
@@ -26,8 +31,12 @@ export async function GET() {
  * DELETE /api/settings/execution-logs
  * Clears all scan execution logs from the database.
  */
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    const user = await verifyAuth(request, ['Admin']);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized.' }, { status: 403 });
+    }
     await prisma.scanExecutionLog.deleteMany({});
     return NextResponse.json({ success: true, message: 'Execution logs cleared successfully' });
   } catch (error: any) {

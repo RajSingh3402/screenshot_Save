@@ -5,7 +5,7 @@ import * as jose from 'jose';
 const JWT_SECRET = process.env.JWT_SECRET || 'sitewatch_secret_key_123456_default';
 const key = new TextEncoder().encode(JWT_SECRET);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const path = request.nextUrl.pathname;
 
@@ -82,4 +82,7 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico|screenshots|reports).*)',
   ],
 };
+
+export default proxy;
+
 

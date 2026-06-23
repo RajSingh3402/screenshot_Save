@@ -1,0 +1,594 @@
+import puppeteer, { Browser, Page } from 'puppeteer';
+import fs from 'fs';
+import path from 'path';
+import { prisma } from '../prisma';
+import { checkSSL } from './sslService';
+import { checkDomainExpiry } from './domainService';
+import { checkMalware } from './malwareService';
+import { generatePdfReport } from './pdfService';
+import { sendEmailNotification } from './emailService';
+
+// Helper function to auto-scroll page to load lazy content
+async function autoScroll(page: Page) {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      let totalHeight = 0;
+      const distance = 400;
+      const maxScrolls = 80; // Limit to prevent infinite scroll hangs
+      let scrolls = 0;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+        scrolls++;
+
+        if (totalHeight >= scrollHeight - window.innerHeight || scrolls >= maxScrolls) {
+          clearInterval(timer);
+          window.scrollTo(0, 0); // Scroll back to top
+          resolve();
+        }
+      }, 100);
+    });
+  });
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+}
+
+// Target directories for storing output assets within the client public folder
+const baseDir = process.cwd();
+export const screenshotsDir = path.join(baseDir, 'public', 'screenshots');
+export const reportsDir = path.join(baseDir, 'public', 'reports');
+
+// Ensure screenshots and reports directories exist at startup
+if (!fs.existsSync(screenshotsDir)) {
+  fs.mkdirSync(screenshotsDir, { recursive: true });
+}
+if (!fs.existsSync(reportsDir)) {
+  fs.mkdirSync(reportsDir, { recursive: true });
+}
+
+// Global Capture Progress State
+export interface ProgressState {
+  active: boolean;
+  status: string;
+  current: number;
+  total: number;
+}
+
+// Attach state to global scope to prevent reset during Next.js hot-reloads
+const globalForProgress = global as unknown as { captureProgress?: ProgressState };
+
+if (!globalForProgress.captureProgress) {
+  globalForProgress.captureProgress = {
+    active: false,
+    status: 'Idle',
+    current: 0,
+    total: 0,
+  };
+}
+
+export const getCaptureProgressState = async (): Promise<ProgressState> => {
+  return globalForProgress.captureProgress!;
+};
+
+export async function runCaptureSession(triggerName = 'Manual Trigger'): Promise<void> {
+  console.log(`Starting capture session triggered by: ${triggerName}`);
+
+  let websites = [];
+  try {
+    websites = await prisma.website.findMany({
+      orderBy: { id: 'desc' },
+    });
+  } catch (err) {
+    console.error('Database read failed in runCaptureSession:', err);
+    globalForProgress.captureProgress = {
+      active: false,
+      status: 'Failed to read sites from database',
+      current: 0,
+      total: 0,
+    };
+    return;
+  }
+
+  const activeSites = (websites || []).filter((s) => s.status === 'active');
+
+  if (activeSites.length === 0) {
+    console.log('No active websites to monitor.');
+    globalForProgress.captureProgress = {
+      active: false,
+      status: 'Completed (No active sites)',
+      current: 0,
+      total: 0,
+    };
+    return;
+  }
+
+  globalForProgress.captureProgress = {
+    active: true,
+    status: 'Launching browser engine...',
+    current: 0,
+    total: activeSites.length,
+  };
+
+  let browser: Browser | null = null;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      ignoreHTTPSErrors: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+  } catch (err) {
+    console.error('Failed to launch browser:', err);
+    globalForProgress.captureProgress = {
+      active: false,
+      status: 'Failed to launch browser',
+      current: 0,
+      total: 0,
+    };
+    return;
+  }
+
+  const timestamp = Date.now();
+  const dateObj = new Date();
+  const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  const reportDetails = new Array(activeSites.length);
+  let completedCount = 0;
+  let currentActiveCaptures: string[] = [];
+
+  const updateProgressStatus = () => {
+    if (completedCount < activeSites.length) {
+      const activeNames = currentActiveCaptures.join(', ');
+      globalForProgress.captureProgress!.status = `Checked ${completedCount} of ${activeSites.length}. Active: ${activeNames}...`;
+    }
+  };
+
+  const captureWorker = async (site: any, index: number) => {
+    currentActiveCaptures.push(site.name);
+    globalForProgress.captureProgress!.current = completedCount;
+    updateProgressStatus();
+    console.log(`[Start] Monitoring ${site.name} (${site.url})...`);
+
+    let page: Page | null = null;
+    try {
+      page = await browser!.newPage();
+      await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
+      await page.setUserAgent(
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      );
+      await page.setDefaultNavigationTimeout(60000);
+    } catch (e: any) {
+      console.error(`Failed to create page context for ${site.name}:`, e.message);
+      completedCount++;
+      currentActiveCaptures = currentActiveCaptures.filter((name) => name !== site.name);
+      return;
+    }
+
+    let loadTime = 0;
+    let siteSuccess = true;
+    let siteError: string | null = null;
+    let filename = `${site.id}_${timestamp}.png`;
+    let screenshotPath = path.join(screenshotsDir, filename);
+    const startTime = Date.now();
+
+    try {
+      const response = await page.goto(site.url, { waitUntil: 'networkidle2', timeout: 60000 });
+
+      // Simulate user interaction to bypass optimization plugins that delay JS execution until user interaction
+      try {
+        await page.mouse.move(100, 100);
+        await page.evaluate(() => {
+          window.scrollBy(0, 50);
+          const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+          events.forEach((evt) => {
+            window.dispatchEvent(new Event(evt));
+          });
+        });
+        await page.mouse.move(200, 200);
+        await page.evaluate(() => {
+          window.scrollBy(0, -50);
+        });
+      } catch (interactionErr: any) {
+        console.log(`Failed to simulate interaction for ${site.name}:`, interactionErr.message);
+      }
+
+      // Wait for network idle to ensure resources/APIs are loaded
+      try {
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 });
+      } catch (idleErr) {
+        console.log(`waitForNetworkIdle timed out for ${site.name}, proceeding anyway...`);
+      }
+
+      // Dynamically wait up to 5 seconds for any loader/preloader overlay elements to disappear
+      try {
+        await page.evaluate(async () => {
+          const loaderSelectors = [
+            '#preloader',
+            '.preloader',
+            '#loader',
+            '.loader',
+            '#loading',
+            '.loading',
+            '.site-preloader',
+            '.site-loader',
+            '.page-loader',
+            '#page-preloader',
+            '.gt3_preloader',
+            '.loading-screen',
+            '.spinner-wrapper',
+            '#spinner-wrapper',
+            '.preloader-wrapper',
+            '#preloader-wrapper',
+          ];
+
+          const getVisibleLoaders = () => {
+            return loaderSelectors.flatMap((selector) => {
+              const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+              return elements.filter((el) => {
+                const rect = el.getBoundingClientRect();
+                const style = window.getComputedStyle(el);
+                return (
+                  el.offsetParent !== null &&
+                  style.display !== 'none' &&
+                  style.visibility !== 'hidden' &&
+                  parseFloat(style.opacity) > 0.1 &&
+                  rect.width > 10 &&
+                  rect.height > 10
+                );
+              });
+            });
+          };
+
+          const start = Date.now();
+          while (Date.now() - start < 5000) {
+            const visibleLoaders = getVisibleLoaders();
+            if (visibleLoaders.length === 0) {
+              break;
+            }
+            await new Promise((r) => setTimeout(r, 200));
+          }
+        });
+      } catch (err: any) {
+        console.log(`Preloader visibility polling failed for ${site.name}:`, err.message);
+      }
+
+      // Add a short 1.5-second stabilization buffer to let page animations/layout settle
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // Force hide any remaining preloader/spinner elements in case they are stuck
+      try {
+        await page.evaluate(() => {
+          const loaderSelectors = [
+            '#preloader',
+            '.preloader',
+            '#loader',
+            '.loader',
+            '#loading',
+            '.loading',
+            '.site-preloader',
+            '.site-loader',
+            '.page-loader',
+            '#page-preloader',
+            '.gt3_preloader',
+            '.loading-screen',
+            '.spinner-wrapper',
+            '#spinner-wrapper',
+            '.preloader-wrapper',
+            '#preloader-wrapper',
+          ];
+          loaderSelectors.forEach((selector) => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach((el: any) => {
+              el.style.display = 'none';
+              el.style.opacity = '0';
+              el.style.visibility = 'hidden';
+            });
+          });
+        });
+      } catch (err: any) {
+        console.log(`Failed to hide loader elements for ${site.name}:`, err.message);
+      }
+
+      loadTime = Date.now() - startTime;
+
+      const status = response ? response.status() : 200;
+      if (status >= 400) {
+        siteSuccess = false;
+        siteError = `HTTP Error ${status}`;
+      } else {
+        await autoScroll(page);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
+      }
+    } catch (err: any) {
+      const currentUrl = page.url();
+      if (err.message.includes('timeout') && currentUrl && currentUrl !== 'about:blank') {
+        try {
+          console.log(`Navigation timed out for ${site.name}, attempting fallback screenshot...`);
+          try {
+            await page.mouse.move(100, 100);
+            await page.evaluate(() => {
+              const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'wheel'];
+              events.forEach((evt) => {
+                window.dispatchEvent(new Event(evt));
+              });
+            });
+          } catch (e) {}
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+          try {
+            await page.evaluate(() => {
+              const loaderSelectors = [
+                '#preloader',
+                '.preloader',
+                '#loader',
+                '.loader',
+                '#loading',
+                '.loading',
+                '.site-preloader',
+                '.site-loader',
+                '.page-loader',
+                '#page-preloader',
+                '.gt3_preloader',
+                '.loading-screen',
+                '.spinner-wrapper',
+                '#spinner-wrapper',
+                '.preloader-wrapper',
+                '#preloader-wrapper',
+              ];
+              loaderSelectors.forEach((selector) => {
+                const elements = document.querySelectorAll(selector);
+                elements.forEach((el: any) => {
+                  el.style.display = 'none';
+                  el.style.opacity = '0';
+                  el.style.visibility = 'hidden';
+                });
+              });
+            });
+          } catch (e) {}
+          await autoScroll(page);
+          await page.screenshot({ path: screenshotPath, fullPage: true });
+          loadTime = Date.now() - startTime;
+          siteSuccess = true;
+          siteError = null;
+        } catch (screenshotErr) {
+          siteSuccess = false;
+          siteError = err.message || 'Timeout / Connection Failure';
+          console.error(`Error loading ${site.name} and fallback screenshot failed:`, siteError);
+        }
+      } else {
+        siteSuccess = false;
+        siteError = err.message || 'Timeout / Connection Failure';
+        console.error(`Error loading ${site.name}:`, siteError);
+      }
+    } finally {
+      if (page) await page.close();
+    }
+
+    // Perform Metrics Checks
+    console.log(`[Start] Security metrics checks for ${site.name}...`);
+    let sslRes = { status: 'Error', expiryDate: null as Date | null, daysRemaining: null as number | null, warning: true };
+    let domainRes = { expiryDate: null as Date | null, daysRemaining: null as number | null, warning: true };
+    let malwareRes = { safeBrowsingStatus: 'Error', malwareStatus: 'Error', phishingStatus: 'Error', blacklistStatus: 'Error' };
+
+    try {
+      sslRes = await checkSSL(site.url);
+    } catch (sslErr: any) {
+      console.error(`SSL check failed for ${site.name}:`, sslErr.message);
+    }
+
+    try {
+      domainRes = await checkDomainExpiry(site.url);
+    } catch (domErr: any) {
+      console.error(`Domain check failed for ${site.name}:`, domErr.message);
+    }
+
+    try {
+      malwareRes = checkMalware(site.url);
+    } catch (malErr: any) {
+      console.error(`Malware check failed for ${site.name}:`, malErr.message);
+    }
+
+    // Save metrics results to database
+    try {
+      await prisma.metric.create({
+        data: {
+          websiteId: BigInt(site.id),
+          url: site.url,
+          name: site.name,
+          timestamp: new Date(),
+          status: siteSuccess ? 'online' : 'offline',
+          responseTime: siteSuccess ? loadTime : null,
+          sslStatus: sslRes.status,
+          sslExpiryDate: sslRes.expiryDate,
+          sslDaysRemaining: sslRes.daysRemaining,
+          sslWarning: sslRes.warning,
+          domainExpiryDate: domainRes.expiryDate,
+          domainDaysRemaining: domainRes.daysRemaining,
+          domainWarning: domainRes.warning,
+          safeBrowsingStatus: malwareRes.safeBrowsingStatus,
+          malwareStatus: malwareRes.malwareStatus,
+          phishingStatus: malwareRes.phishingStatus,
+          blacklistStatus: malwareRes.blacklistStatus,
+          screenshotPath: siteSuccess ? filename : null,
+        },
+      });
+    } catch (dbMetricErr: any) {
+      console.error(`Failed to write metrics to database for ${site.name}:`, dbMetricErr.message);
+    }
+
+    // Update website state in MySQL database
+    try {
+      await prisma.website.update({
+        where: { id: BigInt(site.id) },
+        data: {
+          lastStatus: siteSuccess ? 'success' : 'failed',
+          lastCapture: timeStr,
+          error: siteSuccess ? null : siteError,
+          lastCaptureImage: siteSuccess ? filename : null,
+        },
+      });
+    } catch (dbErr: any) {
+      console.error(`Failed to update website state in database for ${site.name}:`, dbErr);
+    }
+
+    reportDetails[index] = {
+      id: site.id,
+      name: site.name,
+      url: site.url,
+      status: siteSuccess ? 'success' : 'failed',
+      loadTime: siteSuccess ? loadTime : null,
+      error: siteSuccess ? null : siteError,
+      screenshot: siteSuccess ? filename : null,
+      ssl: sslRes,
+      domain: domainRes,
+      malware: malwareRes,
+    };
+
+    completedCount++;
+    currentActiveCaptures = currentActiveCaptures.filter((name) => name !== site.name);
+    globalForProgress.captureProgress!.current = completedCount;
+    updateProgressStatus();
+    console.log(`[Finish] Monitored ${site.name}. Success: ${siteSuccess}`);
+  };
+
+  // Run up to 4 captures concurrently to speed up the process significantly
+  const concurrencyLimit = 4;
+  const queue = [...activeSites];
+  const workers = Array(Math.min(concurrencyLimit, queue.length))
+    .fill(null)
+    .map(async () => {
+      while (queue.length > 0) {
+        const site = queue.shift();
+        if (!site) continue;
+        const index = activeSites.indexOf(site);
+        await captureWorker(site, index);
+      }
+    });
+
+  await Promise.all(workers);
+
+  // Close browser instance
+  await browser.close();
+
+  // Calculate success / failed counts
+  let successCount = 0;
+  let failedCount = 0;
+  for (const item of reportDetails) {
+    if (item && item.status === 'success') {
+      successCount++;
+    } else {
+      failedCount++;
+    }
+  }
+
+  globalForProgress.captureProgress!.status = 'Generating PDF report...';
+  console.log('Generating A4 PDF Report...');
+
+  const pdfFilename = `WebsiteReport_${dateObj.getFullYear()}${(dateObj.getMonth() + 1)
+    .toString()
+    .padStart(2, '0')}${dateObj.getDate().toString().padStart(2, '0')}_${dateObj.getHours()
+    .toString()
+    .padStart(2, '0')}${dateObj.getMinutes().toString().padStart(2, '0')}.pdf`;
+  const pdfPath = path.join(reportsDir, pdfFilename);
+
+  try {
+    await generatePdfReport({
+      reportDetails,
+      successCount,
+      failedCount,
+      activeSitesCount: activeSites.length,
+      triggerName,
+      dateStr,
+      timeStr,
+      pdfPath,
+      screenshotsDir,
+    });
+  } catch (err) {
+    console.error('PDF generation failed:', err);
+  }
+
+  // Create new report database entry
+  const newReport = {
+    id: timestamp,
+    date: dateStr,
+    time: timeStr,
+    total: activeSites.length,
+    success: successCount,
+    failed: failedCount,
+    file: pdfFilename,
+    details: reportDetails,
+  };
+
+  try {
+    await prisma.report.create({
+      data: {
+        id: BigInt(newReport.id),
+        date: newReport.date,
+        time: newReport.time,
+        total: newReport.total,
+        success: newReport.success,
+        failed: newReport.failed,
+        file: newReport.file,
+        details: {
+          create: (newReport.details || []).map((d: any) => ({
+            websiteId: BigInt(d.id),
+            name: d.name,
+            url: d.url,
+            status: d.status,
+            loadTime: d.loadTime || null,
+            error: d.error || null,
+            screenshot: d.screenshot || null,
+          })),
+        },
+      },
+    });
+  } catch (dbErr) {
+    console.error('Failed to create report entry in database:', dbErr);
+  }
+
+  globalForProgress.captureProgress!.status = 'Sending email alerts...';
+  console.log('Sending emails...');
+
+  // Fetch settings from database for email notification dispatch
+  let settings: any = {};
+  try {
+    const [schedules, recipients, smtpRow] = await Promise.all([
+      prisma.schedule.findMany(),
+      prisma.emailRecipient.findMany(),
+      prisma.smtpSetting.findUnique({ where: { id: 1 } }),
+    ]);
+    const smtp = smtpRow || { host: '', port: '', user: '', pass: '' };
+    settings = {
+      schedules: schedules.map((s) => ({
+        id: Number(s.id),
+        time: s.time,
+        enabled: Boolean(s.enabled),
+      })),
+      recipients: recipients.map((r) => ({
+        id: Number(r.id),
+        email: r.email,
+      })),
+      smtp: {
+        host: smtp.host || '',
+        port: smtp.port || '',
+        user: smtp.user || '',
+        pass: smtp.pass || '',
+      },
+    };
+  } catch (err) {
+    console.error('Failed to fetch settings for email notifications:', err);
+  }
+
+  try {
+    await sendEmailNotification(settings, newReport, pdfPath);
+  } catch (emailErr) {
+    console.error('Failed to send email notification:', emailErr);
+  }
+
+  globalForProgress.captureProgress = {
+    active: false,
+    status: 'Completed successfully!',
+    current: 0,
+    total: 0,
+  };
+  console.log('Capture session completed successfully.');
+}
