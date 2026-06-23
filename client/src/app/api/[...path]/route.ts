@@ -97,7 +97,7 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     }
 
     // 4. /api/websites
-    if (lowerPath === 'websites') {
+    if (lowerPath === 'websites' || lowerPath === 'websites/bulk') {
       if (method === 'GET') {
         return NextResponse.json([
           {
@@ -165,32 +165,62 @@ async function handleProxy(request: NextRequest, params: { path: string[] }) {
     }
 
     // 9. /api/settings/schedules
-    if (lowerPath === 'settings/schedules') {
-      return NextResponse.json([
-        { id: 1, time: "09:00", enabled: true }
-      ]);
+    if (lowerPath === 'settings/schedules' || lowerPath.startsWith('settings/schedules/')) {
+      if (method === 'GET') {
+        return NextResponse.json([
+          { id: 1, time: "09:00", enabled: true }
+        ]);
+      }
+      return NextResponse.json({ success: true });
     }
 
     // 10. /api/settings/recipients
-    if (lowerPath === 'settings/recipients') {
-      return NextResponse.json([
-        { id: 1, email: "satyamsingh.000121@gmail.com" }
-      ]);
+    if (lowerPath === 'settings/recipients' || lowerPath.startsWith('settings/recipients/')) {
+      if (method === 'GET') {
+        return NextResponse.json([
+          { id: 1, email: "satyamsingh.000121@gmail.com" }
+        ]);
+      }
+      return NextResponse.json({ success: true });
     }
 
     // 11. /api/settings/smtp
-    if (lowerPath === 'settings/smtp') {
-      return NextResponse.json({
-        host: "smtp.mailtrap.io",
-        port: "2525",
-        user: "demo_user",
-        pass: "demo_pass"
-      });
+    if (lowerPath === 'settings/smtp' || lowerPath === 'settings/smtp/test') {
+      if (method === 'GET') {
+        return NextResponse.json({
+          host: "smtp.mailtrap.io",
+          port: "2525",
+          user: "demo_user",
+          pass: "demo_pass"
+        });
+      }
+      return NextResponse.json({ success: true });
     }
 
     // 12. /api/settings/execution-logs
     if (lowerPath === 'settings/execution-logs') {
       return NextResponse.json([]);
+    }
+
+    // 13. /api/excel/process
+    if (lowerPath === 'excel/process') {
+      return NextResponse.json({ success: true, count: 0, websites: [] });
+    }
+
+    // 14. /api/users
+    if (lowerPath === 'users' || lowerPath.startsWith('users/')) {
+      if (method === 'GET') {
+        return NextResponse.json([
+          {
+            id: 1781701899024,
+            name: "rajsingh (Demo)",
+            email: "satyamsingh.000121@gmail.com",
+            role: "Admin",
+            status: "Active"
+          }
+        ]);
+      }
+      return NextResponse.json({ success: true });
     }
 
     // Generic fallback
