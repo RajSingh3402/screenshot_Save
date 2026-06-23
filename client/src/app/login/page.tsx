@@ -50,6 +50,9 @@ export default function LoginPage() {
     }
   }
 
+  // TO UNCOMMENT THE LOGIN PAGE: Delete the "return null;" line below:
+  return null;
+
   return (
     <div style={{
       display: 'flex',
