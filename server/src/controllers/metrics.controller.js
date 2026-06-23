@@ -9,3 +9,14 @@ export async function getMetricsHistory(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export async function deleteAllMetrics(req, res) {
+  try {
+    await dbService.deleteAllMetrics();
+    res.json({ message: 'All metrics deleted successfully' });
+  } catch (err) {
+    console.error('Error in DELETE /api/metrics:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+

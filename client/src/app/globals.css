@@ -57,3 +57,16 @@ table {
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+
+/* Style for time input icons in dark mode */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+

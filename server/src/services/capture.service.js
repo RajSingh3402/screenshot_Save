@@ -9,6 +9,45 @@ import { sendEmailNotification } from './email.service.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Helper function to read PNG dimensions from physical file metadata
+function getPngDimensions(filePath) {
+  const buffer = Buffer.alloc(8);
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    fs.readSync(fd, buffer, 0, 8, 16);
+    const width = buffer.readInt32BE(0);
+    const height = buffer.readInt32BE(4);
+    return { width, height };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+// Helper function to auto-scroll page to load lazy content
+async function autoScroll(page) {
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      let totalHeight = 0;
+      const distance = 400;
+      const maxScrolls = 80; // Limit to prevent infinite scroll hangs
+      let scrolls = 0;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+        scrolls++;
+
+        if (totalHeight >= scrollHeight - window.innerHeight || scrolls >= maxScrolls) {
+          clearInterval(timer);
+          window.scrollTo(0, 0); // Scroll back to top
+          resolve();
+        }
+      }, 100);
+    });
+  });
+  await new Promise(resolve => setTimeout(resolve, 1000));
+}
+
 // Base directory is the server project root (e.g. c:/screenshot_project/server)
 const baseDir = path.resolve(__dirname, '..', '..');
 export const screenshotsDir = path.join(baseDir, 'public', 'screenshots');
@@ -99,9 +138,9 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     let page;
     try {
       page = await browser.newPage();
-      await page.setViewport({ width: 1280, height: 800 });
+      await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      await page.setDefaultNavigationTimeout(30000);
+      await page.setDefaultNavigationTimeout(60000);
     } catch (e) {
       console.error(`Failed to create page context for ${site.name}:`, e.message);
       completedCount++;
@@ -117,7 +156,7 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     const startTime = Date.now();
 
     try {
-      const response = await page.goto(site.url, { waitUntil: 'load' });
+      const response = await page.goto(site.url, { waitUntil: 'networkidle2', timeout: 60000 });
       
       // Simulate user interaction to bypass optimization plugins that delay JS execution until user interaction
       try {
@@ -218,7 +257,8 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         siteSuccess = false;
         siteError = `HTTP Error ${status}`;
       } else {
-        await page.screenshot({ path: screenshotPath, fullPage: false });
+        await autoScroll(page);
+        await page.screenshot({ path: screenshotPath, fullPage: true });
       }
     } catch (err) {
       const currentUrl = page.url();
@@ -257,7 +297,8 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
               });
             });
           } catch (e) {}
-          await page.screenshot({ path: screenshotPath, fullPage: false });
+          await autoScroll(page);
+          await page.screenshot({ path: screenshotPath, fullPage: true });
           loadTime = Date.now() - startTime;
           siteSuccess = true;
           siteError = null;
@@ -479,11 +520,36 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         .alerts-box ul { margin: 0; padding-left: 20px; font-size: 11px; }
         .alerts-box li { margin-bottom: 6px; }
         
-        .screenshot-section { page-break-inside: avoid; margin-top: 20px; }
-        .page-break-before { page-break-before: always; }
-        .screenshot-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; margin-bottom: 6px; font-size: 11px; font-weight: bold; color: #374151; }
-        .screenshot-img-container { text-align: center; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; background: #f9fafb; }
-        .screenshot-img { max-width: 100%; max-height: 220px; object-fit: contain; }
+        .screenshot-section {
+          page-break-before: always;
+          page-break-inside: avoid;
+          height: 260mm;
+          display: flex;
+          flex-direction: column;
+          box-sizing: border-box;
+        }
+        .screenshot-header {
+          border-bottom: 1px solid #e5e7eb;
+          padding-bottom: 4px;
+          margin-bottom: 10px;
+          font-size: 11px;
+          font-weight: bold;
+          color: #374151;
+          width: 100%;
+          text-align: left;
+        }
+        .screenshot-img-container-full {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          overflow: hidden;
+        }
+        .screenshot-img-full {
+          display: block;
+          object-fit: contain;
+        }
       </style>
     </head>
     <body>
@@ -676,12 +742,33 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         const fullImagePath = path.join(screenshotsDir, d.screenshot);
         if (fs.existsSync(fullImagePath)) {
           const base64Image = fs.readFileSync(fullImagePath).toString('base64');
-          const pageBreakClass = (embeddedCount % 2 === 0) ? 'page-break-before' : '';
+          
+          let targetWidth = 718;
+          let targetHeight = 907;
+          try {
+            const dimensions = getPngDimensions(fullImagePath);
+            const originalWidth = dimensions.width;
+            const originalHeight = dimensions.height;
+            
+            // Bounding box at 96 DPI: width ~ 718px, height ~ 907px
+            const maxWidth = 718;
+            const maxHeight = 907;
+            
+            const scaleX = maxWidth / originalWidth;
+            const scaleY = maxHeight / originalHeight;
+            const scale = Math.min(scaleX, scaleY, 1.0);
+            
+            targetWidth = Math.round(originalWidth * scale);
+            targetHeight = Math.round(originalHeight * scale);
+          } catch (dimErr) {
+            console.error(`Failed to read dimensions for screenshot ${d.screenshot}:`, dimErr);
+          }
+
           reportHtml += `
-            <div class="screenshot-section ${pageBreakClass}">
+            <div class="screenshot-section">
               <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
-              <div class="screenshot-img-container">
-                <img class="screenshot-img" src="data:image/png;base64,${base64Image}" />
+              <div class="screenshot-img-container-full">
+                <img class="screenshot-img-full" src="data:image/png;base64,${base64Image}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
               </div>
             </div>
           `;

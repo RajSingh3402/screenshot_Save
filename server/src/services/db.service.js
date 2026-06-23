@@ -167,6 +167,11 @@ export async function createReport(report) {
   });
 }
 
+export async function deleteAllReports() {
+  await prisma.report.deleteMany({});
+}
+
+
 /* ─── Users CRUD Methods ─────────────────────────────── */
 
 export async function getUsers() {
@@ -343,4 +348,9 @@ export async function createMetric(metric) {
   });
   return sanitize(created);
 }
+
+export async function deleteAllMetrics() {
+  await prisma.metric.deleteMany({});
+}
+
 

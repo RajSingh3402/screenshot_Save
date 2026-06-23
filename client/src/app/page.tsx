@@ -125,12 +125,13 @@ export default function App() {
   const pages: Record<string, React.ReactNode> = {
     dashboard: <Dashboard sites={sites} reports={reports} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />,
     websites: <WebsiteManagement sites={sites} refreshSites={fetchSites} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />,
-    reports: <Reports reports={reports} openScreenshot={openScreenshot} />,
-    metrics: <MetricsReport openScreenshot={openScreenshot} />,
+    reports: <Reports reports={reports} openScreenshot={openScreenshot} user={currentUser} refreshReports={fetchReports} />,
+    metrics: <MetricsReport openScreenshot={openScreenshot} user={currentUser} />,
     excel: <ExcelImport refreshSites={fetchSites} />,
     users: <UserManagement />,
     settings: <SettingsManagement />,
   };
+
 
   if (sessionLoading) {
     return (

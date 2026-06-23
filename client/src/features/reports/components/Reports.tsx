@@ -4,9 +4,11 @@ import { S } from '@/styles/theme';
 interface ReportsProps {
   reports: any[];
   openScreenshot: (title: string, file: string) => void;
+  user?: any;
+  refreshReports?: () => void;
 }
 
-export function Reports({ reports, openScreenshot }: ReportsProps) {
+export function Reports({ reports, openScreenshot, user, refreshReports }: ReportsProps) {
   const [sel, setSel] = useState<any>(null);
 
   const displayDetails = sel?.details || [];
@@ -21,11 +23,54 @@ export function Reports({ reports, openScreenshot }: ReportsProps) {
     return r.total > 1 ? "all" : "-";
   };
 
+  const isWriteAllowed = user && (user.role.toLowerCase() === 'admin' || user.role.toLowerCase() === 'editor');
+
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete all reports? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const res = await fetch('/api/reports', { method: 'DELETE' });
+      if (res.ok) {
+        alert("All reports deleted successfully.");
+        if (refreshReports) refreshReports();
+        setSel(null);
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete reports.");
+      }
+    } catch (e) {
+      alert("Error communicating with the server.");
+    }
+  };
+
   return (
     <div style={{ padding: "28px 32px" }}>
-      <div style={{ marginBottom: 22 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Reports</h1>
-        <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>All generated PDF reports · Click a row for details</p>
+      <div style={{ marginBottom: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Reports</h1>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>All generated PDF reports · Click a row for details</p>
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button 
+            onClick={() => refreshReports && refreshReports()} 
+            style={S.btn("linear-gradient(135deg,#6366f1,#8b5cf6)", "#fff", { 
+              boxShadow: "0 4px 12px rgba(99,102,241,0.3)" 
+            })}
+          >
+            🔄 Refresh Reports
+          </button>
+          {isWriteAllowed && (
+            <button 
+              onClick={handleDeleteAll} 
+              style={S.btn("linear-gradient(135deg,#ef4444,#dc2626)", "#fff", { 
+                boxShadow: "0 4px 12px rgba(239,68,68,0.3)" 
+              })}
+            >
+              🗑️ Delete All Reports
+            </button>
+          )}
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: sel ? "1fr 420px" : "1fr", gap: 20 }}>
         <div style={{ ...S.card, overflow: "hidden" }}>

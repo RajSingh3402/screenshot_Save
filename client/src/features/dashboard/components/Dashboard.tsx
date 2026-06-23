@@ -29,10 +29,8 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Dashboard</h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Today: {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} · Live screenshot monitors</p>
         </div>
-        <button onClick={triggerCapture} style={S.btn("linear-gradient(135deg,#6366f1,#8b5cf6)", "#fff", { boxShadow: "0 4px 12px rgba(99,102,241,0.3)" })}>
-          📸 Run Capture Now
-        </button>
       </div>
+
 
       {/* Stat Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>

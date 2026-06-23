@@ -29,3 +29,30 @@ export async function getReportPdf(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export async function deleteAllReports(req, res) {
+  try {
+    // Delete database records
+    await dbService.deleteAllReports();
+
+    // Clean up physical PDF files
+    if (fs.existsSync(reportsDir)) {
+      const files = fs.readdirSync(reportsDir);
+      for (const file of files) {
+        if (file.endsWith('.pdf')) {
+          try {
+            fs.unlinkSync(path.join(reportsDir, file));
+          } catch (e) {
+            console.error(`Failed to delete report file ${file}:`, e);
+          }
+        }
+      }
+    }
+
+    res.json({ message: 'All reports deleted successfully' });
+  } catch (err) {
+    console.error('Error in DELETE /api/reports:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+

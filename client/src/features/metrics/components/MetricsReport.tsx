@@ -3,9 +3,10 @@ import { S } from '@/styles/theme';
 
 interface MetricsReportProps {
   openScreenshot: (title: string, file: string) => void;
+  user?: any;
 }
 
-export function MetricsReport({ openScreenshot }: MetricsReportProps) {
+export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -18,6 +19,26 @@ export function MetricsReport({ openScreenshot }: MetricsReportProps) {
   // Tab states
   const [mainTab, setMainTab] = useState<'latest' | 'history'>('latest');
   const [subTab, setSubTab] = useState<'ssl' | 'domain' | 'malware'>('ssl');
+
+  const isWriteAllowed = user && (user.role.toLowerCase() === 'admin' || user.role.toLowerCase() === 'editor');
+
+  const handleDeleteAll = async () => {
+    if (!confirm("Are you sure you want to delete all metrics? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const res = await fetch('/api/metrics', { method: 'DELETE' });
+      if (res.ok) {
+        alert("All metrics deleted successfully.");
+        fetchMetrics();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to delete metrics.");
+      }
+    } catch (e) {
+      alert("Error communicating with the server.");
+    }
+  };
 
   const fetchMetrics = async () => {
     try {
@@ -157,16 +178,28 @@ export function MetricsReport({ openScreenshot }: MetricsReportProps) {
             Active checks history, certificate expiries, domain logs, and security checks summary
           </p>
         </div>
-        <button 
-          onClick={handleRefresh} 
-          disabled={refreshing}
-          style={S.btn("linear-gradient(135deg,#6366f1,#8b5cf6)", "#fff", { 
-            boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
-            opacity: refreshing ? 0.7 : 1 
-          })}
-        >
-          {refreshing ? "🔄 Refreshing..." : "🔄 Refresh Metrics"}
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button 
+            onClick={handleRefresh} 
+            disabled={refreshing}
+            style={S.btn("linear-gradient(135deg,#6366f1,#8b5cf6)", "#fff", { 
+              boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+              opacity: refreshing ? 0.7 : 1 
+            })}
+          >
+            {refreshing ? "🔄 Refreshing..." : "🔄 Refresh Metrics"}
+          </button>
+          {isWriteAllowed && (
+            <button 
+              onClick={handleDeleteAll} 
+              style={S.btn("linear-gradient(135deg,#ef4444,#dc2626)", "#fff", { 
+                boxShadow: "0 4px 12px rgba(239,68,68,0.3)" 
+              })}
+            >
+              🗑️ Delete All Metrics
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Summary Cards */}
