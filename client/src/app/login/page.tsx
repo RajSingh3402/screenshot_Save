@@ -86,10 +86,6 @@ export default function LoginPage() {
       }} />
 
       {/* Login Card */}
-      {/* 
-        TO UNCOMMENT: Change `false && (` to `true && (` (or remove the wrapper) to show the login card again.
-      */}
-      {false && (
       <div style={{
         ...S.card,
         width: '420px',
@@ -201,7 +197,6 @@ export default function LoginPage() {
           </button>
         </form>
       </div>
-      )}
     </div>
   );
 }
