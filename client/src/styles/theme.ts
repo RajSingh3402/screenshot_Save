@@ -40,7 +40,8 @@ export const S = {
     color: "#64748b",
     fontWeight: 500,
     textTransform: "uppercase" as const,
-    letterSpacing: "0.05em"
+    letterSpacing: "0.05em",
+    whiteSpace: "nowrap"
   } as React.CSSProperties,
   
   td: (extra: React.CSSProperties = {}) => ({ 

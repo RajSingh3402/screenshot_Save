@@ -72,46 +72,48 @@ export function Reports({ reports, openScreenshot, user, refreshReports }: Repor
           )}
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: sel ? "1fr 420px" : "1fr", gap: 20 }}>
+      <div className={`grid grid-cols-1 ${sel ? 'lg:grid-cols-[1fr_420px]' : ''} gap-5`}>
         <div style={{ ...S.card, overflow: "hidden" }}>
-          <table>
-            <thead>
-              <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-                {["Date", "Name", "Time", "Total", "Success", "Failed", "Rate", ""].map(h => <th key={h} style={S.th}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((r, i) => {
-                const pct = Math.round((r.success / r.total) * 100);
-                const isActive = sel?.id === r.id;
-                return (
-                  <tr key={r.id} onClick={() => setSel(isActive ? null : r)}
-                    style={{ borderBottom: "1px solid #1e213060", background: isActive ? "#1e2a4a" : i % 2 === 0 ? "transparent" : "#ffffff05", cursor: "pointer" }}>
-                    <td style={S.td({ color: "#f1f5f9" })}>{r.date}</td>
-                    <td style={S.td({ color: "#e2e8f0", fontWeight: 500 })}>{getReportName(r)}</td>
-                    <td style={S.td({ color: "#94a3b8" })}>{r.time}</td>
-                    <td style={S.td({ color: "#94a3b8" })}>{r.total}</td>
-                    <td style={S.td({ color: "#22c55e", fontWeight: 600 })}>{r.success}</td>
-                    <td style={S.td({ color: r.failed > 0 ? "#ef4444" : "#64748b", fontWeight: r.failed > 0 ? 600 : 400 })}>{r.failed}</td>
-                    <td style={{ padding: "10px 16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ width: 50, height: 5, background: "#1e2130", borderRadius: 3, overflow: "hidden" }}>
-                          <div style={{ width: pct + "%", height: "100%", background: pct === 100 ? "#22c55e" : "#f59e0b", borderRadius: 3 }} />
+          <div className="w-full overflow-x-auto">
+            <table>
+              <thead>
+                <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                  {["Date", "Name", "Time", "Total", "Success", "Failed", "Rate", ""].map(h => <th key={h} style={S.th}>{h}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {reports.map((r, i) => {
+                  const pct = Math.round((r.success / r.total) * 100);
+                  const isActive = sel?.id === r.id;
+                  return (
+                    <tr key={r.id} onClick={() => setSel(isActive ? null : r)}
+                      style={{ borderBottom: "1px solid #1e213060", background: isActive ? "#1e2a4a" : i % 2 === 0 ? "transparent" : "#ffffff05", cursor: "pointer" }}>
+                      <td style={S.td({ color: "#f1f5f9", whiteSpace: "nowrap" })}>{r.date}</td>
+                      <td style={S.td({ color: "#e2e8f0", fontWeight: 500, whiteSpace: "nowrap" })}>{getReportName(r)}</td>
+                      <td style={S.td({ color: "#94a3b8", whiteSpace: "nowrap" })}>{r.time}</td>
+                      <td style={S.td({ color: "#94a3b8", whiteSpace: "nowrap" })}>{r.total}</td>
+                      <td style={S.td({ color: "#22c55e", fontWeight: 600, whiteSpace: "nowrap" })}>{r.success}</td>
+                      <td style={S.td({ color: r.failed > 0 ? "#ef4444" : "#64748b", fontWeight: r.failed > 0 ? 600 : 400, whiteSpace: "nowrap" })}>{r.failed}</td>
+                      <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ width: 50, height: 5, background: "#1e2130", borderRadius: 3, overflow: "hidden" }}>
+                            <div style={{ width: pct + "%", height: "100%", background: pct === 100 ? "#22c55e" : "#f59e0b", borderRadius: 3 }} />
+                          </div>
+                          <span style={{ fontSize: 12, color: pct === 100 ? "#22c55e" : "#f59e0b" }}>{pct}%</span>
                         </div>
-                        <span style={{ fontSize: 12, color: pct === 100 ? "#22c55e" : "#f59e0b" }}>{pct}%</span>
-                      </div>
-                    </td>
-                    <td style={{ padding: "10px 16px", textAlign: "right" }}>
-                      <button onClick={e => { e.stopPropagation(); window.open(`/api/reports/${r.id}/pdf`, "_blank"); }} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
-                    </td>
-                  </tr>
-                );
-              })}
-              {reports.length === 0 && (
-                <tr><td colSpan={8} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>No reports found</td></tr>
-              )}
-            </tbody>
-          </table>
+                      </td>
+                      <td style={{ padding: "10px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
+                        <button onClick={e => { e.stopPropagation(); window.open(`/api/reports/${r.id}/pdf`, "_blank"); }} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {reports.length === 0 && (
+                  <tr><td colSpan={8} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>No reports found</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {sel && (

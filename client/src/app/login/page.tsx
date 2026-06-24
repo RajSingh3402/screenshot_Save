@@ -61,7 +61,8 @@ export default function LoginPage() {
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      overflow: 'hidden'
+      overflow: 'hidden',
+      padding: '16px'
     }}>
       {/* Dynamic Background Glows */}
       <div style={{
@@ -86,17 +87,19 @@ export default function LoginPage() {
       }} />
 
       {/* Login Card */}
-      <div style={{
-        ...S.card,
-        width: '420px',
-        padding: '40px 32px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-        background: 'rgba(19, 21, 31, 0.75)',
-        backdropFilter: 'blur(16px)',
-        zIndex: 10,
-        display: 'flex',
-        flexDirection: 'column'
-      }}>
+      <div 
+        style={{
+          ...S.card,
+          padding: '40px 32px',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+          background: 'rgba(19, 21, 31, 0.75)',
+          backdropFilter: 'blur(16px)',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        className="w-full max-w-[420px] mx-4"
+      >
         {/* Header / Logo */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '32px' }}>
           <div style={{

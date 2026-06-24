@@ -88,49 +88,51 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }} className="w-full">
         <input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...S.input, width: 240 }} />
+          style={S.input} className="w-full sm:w-[240px]" />
       </div>
 
       {/* Table */}
       <div style={{ ...S.card, overflow: "hidden" }}>
-        <table>
-          <thead>
-            <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-              {["Name", "URL", "Status", "Last Capture", "Last Status", "Screenshot", "Actions"].map(h => <th key={h} style={S.th}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((s, i) => (
-              <tr key={s.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                <td style={S.td({ fontWeight: 600, color: "#f1f5f9" })}>{s.name}</td>
-                <td style={S.td({ color: "#818cf8", fontSize: 12 })}><a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{s.url}</a></td>
-                <td style={S.td()}>{badge(s.status === "active" ? "#14532d" : "#1e2130", s.status === "active" ? "#86efac" : "#64748b", s.status === "active" ? "● Active" : "○ Disabled")}</td>
-                <td style={S.td({ color: "#94a3b8" })}>{s.lastCapture}</td>
-                <td style={S.td()}>{badge(s.lastStatus === "success" ? "#14532d" : "#450a0a", s.lastStatus === "success" ? "#86efac" : "#fca5a5", s.lastStatus === "success" ? "✓ Success" : ("✗ " + s.error))}</td>
-                <td style={S.td()}>
-                  {s.lastCaptureImage ? (
-                    <button onClick={() => openScreenshot(s.name, s.lastCaptureImage)} style={S.btn("#1e2130", "#818cf8", { padding: "4px 8px", fontSize: 11 })}>👁️ View</button>
-                  ) : "-"}
-                </td>
-                <td style={{ padding: "10px 16px" }}>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => openEdit(s)} style={S.btn("#1e2a4a", "#818cf8", { padding: "5px 10px", fontSize: 12 })}>Edit</button>
-                    <button onClick={() => toggle(s)} style={S.btn(s.status === "active" ? "#1e2130" : "#14532d", s.status === "active" ? "#94a3b8" : "#86efac", { padding: "5px 10px", fontSize: 12 })}>{s.status === "active" ? "Disable" : "Enable"}</button>
-                    <button onClick={() => setDeleteTarget(s)} style={S.btn("#450a0a", "#fca5a5", { padding: "5px 10px", fontSize: 12 })}>Delete</button>
-                  </div>
-                </td>
+        <div className="w-full overflow-x-auto">
+          <table>
+            <thead>
+              <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                {["Name", "URL", "Status", "Last Capture", "Last Status", "Screenshot", "Actions"].map(h => <th key={h} style={S.th}>{h}</th>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((s, i) => (
+                <tr key={s.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                  <td style={S.td({ fontWeight: 600, color: "#f1f5f9", whiteSpace: "nowrap" })}>{s.name}</td>
+                  <td style={S.td({ color: "#818cf8", fontSize: 12, whiteSpace: "nowrap" })}><a href={s.url} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>{s.url}</a></td>
+                  <td style={S.td({ whiteSpace: "nowrap" })}>{badge(s.status === "active" ? "#14532d" : "#1e2130", s.status === "active" ? "#86efac" : "#64748b", s.status === "active" ? "● Active" : "○ Disabled")}</td>
+                  <td style={S.td({ color: "#94a3b8", whiteSpace: "nowrap" })}>{s.lastCapture}</td>
+                  <td style={S.td({ whiteSpace: "nowrap" })}>{badge(s.lastStatus === "success" ? "#14532d" : "#450a0a", s.lastStatus === "success" ? "#86efac" : "#fca5a5", s.lastStatus === "success" ? "✓ Success" : ("✗ " + s.error))}</td>
+                  <td style={S.td({ whiteSpace: "nowrap" })}>
+                    {s.lastCaptureImage ? (
+                      <button onClick={() => openScreenshot(s.name, s.lastCaptureImage)} style={S.btn("#1e2130", "#818cf8", { padding: "4px 8px", fontSize: 11 })}>👁️ View</button>
+                    ) : "-"}
+                  </td>
+                  <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => openEdit(s)} style={S.btn("#1e2a4a", "#818cf8", { padding: "5px 10px", fontSize: 12 })}>Edit</button>
+                      <button onClick={() => toggle(s)} style={S.btn(s.status === "active" ? "#1e2130" : "#14532d", s.status === "active" ? "#94a3b8" : "#86efac", { padding: "5px 10px", fontSize: 12 })}>{s.status === "active" ? "Disable" : "Enable"}</button>
+                      <button onClick={() => setDeleteTarget(s)} style={S.btn("#450a0a", "#fca5a5", { padding: "5px 10px", fontSize: 12 })}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>No websites found</div>}
       </div>
 
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <div style={{ ...S.card, padding: 28, width: 420 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[420px] mx-4 animate-fade-in">
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 20 }}>{editSite ? "Edit Website" : "Add Website"}</h2>
             {[["Site Name", "name", "e.g. CRM Portal"], ["URL", "url", "https://example.com"]].map(([label, key, ph]) => (
               <div key={key} style={{ marginBottom: 14 }}>
@@ -148,10 +150,10 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
 
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
-          <div style={{ ...S.card, padding: 28, width: 400, textAlign: "center" }} className="animate-fade-in">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 12 }}>Delete Website</h2>
-            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[400px] mx-4 animate-fade-in">
+            <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⚠️</div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, textAlign: "center" }}>Delete Website</h2>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24, textAlign: "center" }}>
               Are you sure you want to delete <strong>{deleteTarget.name}</strong>?<br />This action cannot be undone.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
@@ -164,10 +166,10 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
 
       {showDeleteAllConfirm && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
-          <div style={{ ...S.card, padding: 28, width: 400, textAlign: "center" }} className="animate-fade-in">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fca5a5", marginBottom: 12 }}>Delete All Websites</h2>
-            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[400px] mx-4 animate-fade-in">
+            <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⚠️</div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fca5a5", marginBottom: 12, textAlign: "center" }}>Delete All Websites</h2>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24, textAlign: "center" }}>
               Are you sure you want to delete <strong>all {sites.length}</strong> configured websites?<br />This action cannot be undone.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>

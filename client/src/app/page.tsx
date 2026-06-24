@@ -17,6 +17,7 @@ export default function App() {
   const [reports, setReports] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modal Screenshot State
   const [screenshotModal, setScreenshotModal] = useState({ show: false, title: "", file: "" });
@@ -147,15 +148,68 @@ export default function App() {
   const isAllowed = hasAccess(page);
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter','Segoe UI',sans-serif", overflow: "hidden" }}>
-      <Sidebar page={page} setPage={setPage} user={currentUser} onLogout={handleLogout} />
+    <div style={{ display: "flex", height: "100vh", background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter','Segoe UI',sans-serif", overflow: "hidden", position: "relative" }}>
+      
+      {/* Mobile Drawer Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar 
+        page={page} 
+        setPage={setPage} 
+        user={currentUser} 
+        onLogout={handleLogout} 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)} 
+      />
 
       <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+        {/* Mobile Sticky Top Header */}
+        <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#13151f] border-b border-[#1e2130] sticky top-0 z-30 shrink-0">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-1 text-slate-400 hover:text-white focus:outline-none cursor-pointer"
+              aria-label="Toggle Sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2">
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15 }}>📡</div>
+              <span className="font-bold text-sm text-slate-100">SiteWatch</span>
+            </div>
+          </div>
+          
+          {currentUser && (
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg,#6366f1,#a78bfa)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 12,
+              fontWeight: 700,
+              color: "#fff",
+              textTransform: "uppercase"
+            }}>
+              {currentUser.name.charAt(0)}
+            </div>
+          )}
+        </header>
+
         {isAllowed ? (
           pages[page] || pages.dashboard
         ) : (
           <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", background: "#0f1117", padding: "40px" }}>
-            <div style={{ ...S.card, padding: 36, width: 440, textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)", background: "rgba(19, 21, 31, 0.85)" }}>
+            <div style={{ ...S.card, padding: "36px 24px", width: "100%", maxWidth: 440, textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)", background: "rgba(19, 21, 31, 0.85)" }}>
               <div style={{ fontSize: 44, marginBottom: 16 }}>🚫</div>
               <h2 style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>Access Denied</h2>
               <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: "1.6" }}>
@@ -169,7 +223,7 @@ export default function App() {
       {/* Real-time Capture Progress Overlay Modal */}
       {progress.active && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
-          <div className="animate-fade-in" style={{ ...S.card, padding: 32, width: 460, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
+          <div className="animate-fade-in" style={{ ...S.card, padding: "32px 20px", width: "100%", maxWidth: 460, textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.5)" }}>
             <div style={{ fontSize: 32, marginBottom: 15 }} className="pulse">📸</div>
             <h3 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>Site Capture In Progress</h3>
             <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, minHeight: 38 }}>{progress.status}</p>

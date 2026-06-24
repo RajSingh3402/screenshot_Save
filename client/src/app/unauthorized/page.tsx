@@ -33,7 +33,8 @@ export default function AccessDenied() {
     }}>
       <div style={{
         ...S.card,
-        width: '440px',
+        width: '100%',
+        maxWidth: '440px',
         padding: '40px 32px',
         textAlign: 'center',
         boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',

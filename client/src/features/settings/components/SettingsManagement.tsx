@@ -519,7 +519,7 @@ export function SettingsManagement() {
               </form>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <button 
                 type="button" 
                 onClick={handleSmtpTest}
@@ -529,6 +529,7 @@ export function SettingsManagement() {
                   border: '1px solid #818cf850',
                   cursor: (isTestingConnection || isSavingSmtp) ? 'not-allowed' : 'pointer',
                   opacity: (isTestingConnection || isSavingSmtp) ? 0.6 : 1,
+                  padding: '10px 16px'
                 })}
               >
                 {isTestingConnection ? '🔄 Testing...' : '⚡ Test Connection'}
@@ -541,6 +542,7 @@ export function SettingsManagement() {
                   flex: 1,
                   cursor: (isSavingSmtp || isTestingConnection) ? 'not-allowed' : 'pointer',
                   opacity: (isSavingSmtp || isTestingConnection) ? 0.6 : 1,
+                  padding: '10px 16px'
                 })}
               >
                 {isSavingSmtp ? '💾 Saving...' : '💾 Save SMTP Config'}

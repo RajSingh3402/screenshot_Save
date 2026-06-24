@@ -181,59 +181,61 @@ export function UserManagement() {
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }} className="w-full">
         <input placeholder="Search users by name or email..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...S.input, width: 320 }} />
+          style={S.input} className="w-full sm:w-[320px]" />
       </div>
 
       {/* Table */}
       <div style={{ ...S.card, overflow: "hidden" }}>
-        <table>
-          <thead>
-            <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-              {["Name", "Email Address", "Role", "Status", "Actions"].map(h => <th key={h} style={S.th}>{h}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((u, i) => (
-              <tr key={u.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                <td style={S.td({ fontWeight: 600, color: "#f1f5f9" })}>{u.name}</td>
-                <td style={S.td({ color: "#e2e8f0" })}>{u.email}</td>
-                <td style={S.td()}>{roleBadge(u.role)}</td>
-                <td style={S.td()}>{getStatusBadge(u.status)}</td>
-                <td style={{ padding: "10px 16px" }}>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button 
-                      onClick={() => toggleStatus(u)} 
-                      style={S.btn(u.status?.toLowerCase() === 'active' ? "#1e1b4b" : "#14532d", u.status?.toLowerCase() === 'active' ? "#c7d2fe" : "#86efac", { padding: "5px 10px", fontSize: 12 })}
-                    >
-                      {u.status?.toLowerCase() === 'active' ? "Deactivate" : "Activate"}
-                    </button>
-                    <button 
-                      onClick={() => { setResetTarget(u); setError(null); }} 
-                      style={S.btn("#1e2130", "#94a3b8", { padding: "5px 10px", fontSize: 12, border: "1px solid #2d3142" })}
-                    >
-                      Reset PW
-                    </button>
-                    <button 
-                      onClick={() => setDeleteTarget(u)} 
-                      style={S.btn("#450a0a", "#fca5a5", { padding: "5px 10px", fontSize: 12 })}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </td>
+        <div className="w-full overflow-x-auto">
+          <table>
+            <thead>
+              <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                {["Name", "Email Address", "Role", "Status", "Actions"].map(h => <th key={h} style={S.th}>{h}</th>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filtered.map((u, i) => (
+                <tr key={u.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                  <td style={S.td({ fontWeight: 600, color: "#f1f5f9", whiteSpace: "nowrap" })}>{u.name}</td>
+                  <td style={S.td({ color: "#e2e8f0", whiteSpace: "nowrap" })}>{u.email}</td>
+                  <td style={S.td({ whiteSpace: "nowrap" })}>{roleBadge(u.role)}</td>
+                  <td style={S.td({ whiteSpace: "nowrap" })}>{getStatusBadge(u.status)}</td>
+                  <td style={{ padding: "10px 16px", whiteSpace: "nowrap" }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button 
+                        onClick={() => toggleStatus(u)} 
+                        style={S.btn(u.status?.toLowerCase() === 'active' ? "#1e1b4b" : "#14532d", u.status?.toLowerCase() === 'active' ? "#c7d2fe" : "#86efac", { padding: "5px 10px", fontSize: 12 })}
+                      >
+                        {u.status?.toLowerCase() === 'active' ? "Deactivate" : "Activate"}
+                      </button>
+                      <button 
+                        onClick={() => { setResetTarget(u); setError(null); }} 
+                        style={S.btn("#1e2130", "#94a3b8", { padding: "5px 10px", fontSize: 12, border: "1px solid #2d3142" })}
+                      >
+                        Reset PW
+                      </button>
+                      <button 
+                        onClick={() => setDeleteTarget(u)} 
+                        style={S.btn("#450a0a", "#fca5a5", { padding: "5px 10px", fontSize: 12 })}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {filtered.length === 0 && <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>No users found</div>}
       </div>
 
       {/* Add User Modal */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <div style={{ ...S.card, padding: 28, width: 440 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[440px] mx-4 animate-fade-in">
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 20 }}>Add User</h2>
             {error && <div style={{ color: "#ef4444", fontSize: 12, marginBottom: 12 }}>{error}</div>}
             
@@ -287,12 +289,10 @@ export function UserManagement() {
             </div>
           </div>
         </div>
-      )}
-
-      {/* User Created Success Notice (Credentials Popup) */}
+      )}      {/* User Created Success Notice (Credentials Popup) */}
       {createdNotice && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 70 }}>
-          <div style={{ ...S.card, padding: 28, width: 440, border: "1px solid #34d399", background: "rgba(16, 24, 20, 0.95)" }}>
+          <div style={{ ...S.card, padding: 28, border: "1px solid #34d399", background: "rgba(16, 24, 20, 0.95)" }} className="w-full max-w-[440px] mx-4 animate-fade-in">
             <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>✅</div>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 10, textAlign: "center" }}>User Account Created</h2>
             <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20, textAlign: "center" }}>
@@ -322,7 +322,7 @@ export function UserManagement() {
       {/* Password Reset Modal */}
       {resetTarget && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
-          <div style={{ ...S.card, padding: 28, width: 400 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[400px] mx-4 animate-fade-in">
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 10 }}>Reset Password</h2>
             <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 20 }}>
               Set a new security password for <strong>{resetTarget.name}</strong>.
@@ -358,10 +358,10 @@ export function UserManagement() {
       {/* Remove User Modal */}
       {deleteTarget && (
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 60 }}>
-          <div style={{ ...S.card, padding: 28, width: 400, textAlign: "center" }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 12 }}>Remove User Access</h2>
-            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24 }}>
+          <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[400px] mx-4 animate-fade-in">
+            <div style={{ fontSize: 32, marginBottom: 12, textAlign: "center" }}>⚠️</div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 12, textAlign: "center" }}>Remove User Access</h2>
+            <p style={{ fontSize: 13, color: "#94a3b8", marginBottom: 24, textAlign: "center" }}>
               Are you sure you want to remove access for <strong>{deleteTarget.name}</strong>?<br />They will no longer be able to view this portal.
             </p>
             <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>

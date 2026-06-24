@@ -10,9 +10,11 @@ interface SidebarProps {
     status: string;
   } | null;
   onLogout: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export function Sidebar({ page, setPage, user, onLogout }: SidebarProps) {
+export function Sidebar({ page, setPage, user, onLogout, isOpen, onClose }: SidebarProps) {
   const nav = [
     { id: "dashboard", label: "Dashboard", icon: "⬛" },
     { id: "websites", label: "Websites", icon: "🌐" },
@@ -37,8 +39,12 @@ export function Sidebar({ page, setPage, user, onLogout }: SidebarProps) {
   });
 
   return (
-    <aside style={{ width: 220, background: "#13151f", borderRight: "1px solid #1e2130", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-      <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid #1e2130" }}>
+    <aside 
+      className={`w-[220px] bg-[#13151f] border-r border-[#1e2130] flex flex-col shrink-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:transition-transform max-lg:duration-300 max-lg:ease-in-out ${
+        isOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
+      }`}
+    >
+      <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid #1e2130" }} className="flex items-center justify-between">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: "linear-gradient(135deg,#6366f1,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17 }}>📡</div>
           <div>
@@ -46,6 +52,15 @@ export function Sidebar({ page, setPage, user, onLogout }: SidebarProps) {
             <div style={{ fontSize: 11, color: "#64748b" }}>Monitor Portal</div>
           </div>
         </div>
+
+        {/* Close button on mobile */}
+        <button 
+          onClick={onClose}
+          className="lg:hidden p-1 text-slate-400 hover:text-white focus:outline-none cursor-pointer text-sm"
+          aria-label="Close Sidebar"
+        >
+          ✕
+        </button>
       </div>
 
       <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>

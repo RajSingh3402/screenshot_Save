@@ -109,13 +109,13 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
             {failed.length === 0
               ? <div style={{ fontSize: 13, color: "#22c55e" }}>✓ All websites online</div>
               : failed.map(w => (
-                <div key={w.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, borderBottom: "1px solid #1e213040", paddingBottom: 6 }}>
-                  <div>
-                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500 }}>{w.name}</div>
-                    <div style={{ fontSize: 11, color: "#ef4444" }}>{w.error}</div>
+                <div key={w.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, borderBottom: "1px solid #1e213040", paddingBottom: 6, gap: 10 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.name}</div>
+                    <div style={{ fontSize: 11, color: "#ef4444", wordBreak: "break-word" }}>{w.error}</div>
                   </div>
                   {w.lastCaptureImage && (
-                    <button onClick={() => openScreenshot(w.name, w.lastCaptureImage)} style={S.btn("#1e2130", "#94a3b8", { padding: "4px 8px", fontSize: 11 })}>👁️ View</button>
+                    <button onClick={() => openScreenshot(w.name, w.lastCaptureImage)} style={S.btn("#1e2130", "#94a3b8", { padding: "4px 8px", fontSize: 11, flexShrink: 0 })}>👁️ View</button>
                   )}
                 </div>
               ))

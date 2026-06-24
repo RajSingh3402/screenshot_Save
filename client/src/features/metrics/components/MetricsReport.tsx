@@ -445,8 +445,8 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
         /* HISTORY TAB */
         <div>
           {/* Search and Filters */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
-            <div style={{ flex: 1 }}>
+          <div className="flex flex-col md:flex-row gap-3 mb-4 md:items-center">
+            <div className="flex-1 w-full">
               <input
                 type="text"
                 placeholder="🔍 Search history by website name or URL..."
@@ -455,7 +455,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
                 style={S.input}
               />
             </div>
-            <div style={{ width: 160 }}>
+            <div className="w-full md:w-[160px]">
               <select
                 value={filterStatus}
                 onChange={e => setFilterStatus(e.target.value as any)}
@@ -466,7 +466,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
                 <option value="offline">🔴 Status: Offline</option>
               </select>
             </div>
-            <div style={{ width: 180 }}>
+            <div className="w-full md:w-[180px]">
               <select
                 value={filterAlert}
                 onChange={e => setFilterAlert(e.target.value as any)}
@@ -482,88 +482,90 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
 
           {/* History List */}
           <div style={S.card}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-                  {["Scan Timestamp", "Website Name", "Availability", "Response Time", "SSL status", "Domain days", "Malware check", ""].map(h => (
-                    <th key={h} style={S.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHistory.map((item: any, i) => {
-                  const hasMalwareIssue = 
-                    item.safeBrowsingStatus !== 'Safe' || 
-                    item.malwareStatus !== 'Clean' || 
-                    item.phishingStatus !== 'Clean' || 
-                    item.blacklistStatus !== 'Clean';
-                  
-                  return (
-                    <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                      <td style={S.td({ color: "#94a3b8" })}>{formatDateTime(item.timestamp)}</td>
-                      <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>
-                        <div>{item.name}</div>
-                        <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>{item.url}</div>
-                      </td>
-                      <td style={S.td()}>
-                        <span style={{
-                          padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                          background: item.status === 'online' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                          color: item.status === 'online' ? '#4ade80' : '#f87171'
-                        }}>
-                          {item.status === 'online' ? 'Online' : 'Offline'}
-                        </span>
-                      </td>
-                      <td style={S.td({ color: "#f1f5f9" })}>
-                        {item.responseTime !== null ? `${item.responseTime} ms` : '-'}
-                      </td>
-                      <td style={S.td()}>
-                        <span style={{
-                          fontSize: 11,
-                          color: item.sslWarning ? '#f59e0b' : '#10b981'
-                        }}>
-                          {item.sslWarning ? '⚠️ ' : '✓ '} {item.sslStatus}
-                        </span>
-                      </td>
-                      <td style={S.td({ color: item.domainWarning ? '#ef4444' : '#94a3b8' })}>
-                        {item.domainDaysRemaining !== null ? `${item.domainDaysRemaining} days` : '-'}
-                      </td>
-                      <td style={S.td()}>
-                        <span style={{
-                          padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                          background: hasMalwareIssue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
-                          color: hasMalwareIssue ? '#f87171' : '#4ade80'
-                        }}>
-                          {hasMalwareIssue ? '🚨 ALERT' : '✓ Clean'}
-                        </span>
-                      </td>
-                      <td style={S.td({ textAlign: 'right' })}>
-                        {item.screenshotPath ? (
-                          <button 
-                            onClick={() => openScreenshot(item.name, item.screenshotPath)}
-                            style={{ 
-                              background: "#1e2130", border: "none", color: "#818cf8", 
-                              fontSize: 11, padding: "4px 8px", borderRadius: 6, cursor: "pointer" 
-                            }}
-                          >
-                            👁️ Preview
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: 11, color: '#64748b' }}>No Screen</span>
-                        )}
+            <div className="w-full overflow-x-auto">
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                    {["Scan Timestamp", "Website Name", "Availability", "Response Time", "SSL status", "Domain days", "Malware check", ""].map(h => (
+                      <th key={h} style={S.th}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHistory.map((item: any, i) => {
+                    const hasMalwareIssue = 
+                      item.safeBrowsingStatus !== 'Safe' || 
+                      item.malwareStatus !== 'Clean' || 
+                      item.phishingStatus !== 'Clean' || 
+                      item.blacklistStatus !== 'Clean';
+                    
+                    return (
+                      <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                        <td style={S.td({ color: "#94a3b8", whiteSpace: "nowrap" })}>{formatDateTime(item.timestamp)}</td>
+                        <td style={S.td({ color: "#f1f5f9", fontWeight: 600, whiteSpace: "nowrap" })}>
+                          <div>{item.name}</div>
+                          <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>{item.url}</div>
+                        </td>
+                        <td style={S.td({ whiteSpace: "nowrap" })}>
+                          <span style={{
+                            padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                            background: item.status === 'online' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                            color: item.status === 'online' ? '#4ade80' : '#f87171'
+                          }}>
+                            {item.status === 'online' ? 'Online' : 'Offline'}
+                          </span>
+                        </td>
+                        <td style={S.td({ color: "#f1f5f9", whiteSpace: "nowrap" })}>
+                          {item.responseTime !== null ? `${item.responseTime} ms` : '-'}
+                        </td>
+                        <td style={S.td({ whiteSpace: "nowrap" })}>
+                          <span style={{
+                            fontSize: 11,
+                            color: item.sslWarning ? '#f59e0b' : '#10b981'
+                          }}>
+                            {item.sslWarning ? '⚠️ ' : '✓ '} {item.sslStatus}
+                          </span>
+                        </td>
+                        <td style={S.td({ color: item.domainWarning ? '#ef4444' : '#94a3b8', whiteSpace: "nowrap" })}>
+                          {item.domainDaysRemaining !== null ? `${item.domainDaysRemaining} days` : '-'}
+                        </td>
+                        <td style={S.td({ whiteSpace: "nowrap" })}>
+                          <span style={{
+                            padding: "2px 6px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                            background: hasMalwareIssue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                            color: hasMalwareIssue ? '#f87171' : '#4ade80'
+                          }}>
+                            {hasMalwareIssue ? '🚨 ALERT' : '✓ Clean'}
+                          </span>
+                        </td>
+                        <td style={S.td({ textAlign: 'right', whiteSpace: "nowrap" })}>
+                          {item.screenshotPath ? (
+                            <button 
+                              onClick={() => openScreenshot(item.name, item.screenshotPath)}
+                              style={{ 
+                                background: "#1e2130", border: "none", color: "#818cf8", 
+                                fontSize: 11, padding: "4px 8px", borderRadius: 6, cursor: "pointer" 
+                              }}
+                            >
+                              👁️ Preview
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: 11, color: '#64748b' }}>No Screen</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredHistory.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>
+                        No search/filter matches found in history logs.
                       </td>
                     </tr>
-                  );
-                })}
-                {filteredHistory.length === 0 && (
-                  <tr>
-                    <td colSpan={8} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>
-                      No search/filter matches found in history logs.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
