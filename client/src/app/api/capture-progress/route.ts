@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { getCaptureProgressState } from '@/lib/services/screenshotService';
+import '@/services/scheduler.service';
 
 /**
  * GET /api/capture-progress

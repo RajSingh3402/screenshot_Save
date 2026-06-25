@@ -8,7 +8,8 @@ export async function register() {
       const globalForScheduler = global as unknown as { schedulerInitialized?: boolean };
       if (!globalForScheduler.schedulerInitialized) {
         globalForScheduler.schedulerInitialized = true;
-        const { initScheduler } = await import('./services/scheduler.service');
+        // Use eval('require') to prevent Webpack from static-bundling this file into Edge functions
+        const { initScheduler } = eval('require')('./services/scheduler.service');
         initScheduler();
         console.log('Next.js Background Scan Scheduler successfully initialized.');
       } else {
