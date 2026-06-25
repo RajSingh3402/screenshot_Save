@@ -171,13 +171,13 @@ export function UserManagement() {
   };
 
   return (
-    <div style={{ padding: "28px 32px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ width: "100%" }}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Users Management</h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Manage monitor portal access, user roles, and security credentials</p>
         </div>
-        <button onClick={() => { setShowModal(true); setError(null); }} style={S.btn("#6366f1", "#fff")}>+ Add User</button>
+        <button onClick={() => { setShowModal(true); setError(null); }} style={S.btn("#6366f1", "#fff", { alignSelf: "flex-start" })}>+ Add User</button>
       </div>
 
       {/* Filters */}

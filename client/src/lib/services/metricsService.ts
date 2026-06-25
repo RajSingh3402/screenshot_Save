@@ -4,7 +4,18 @@ export async function getMetrics() {
   const rows = await prisma.metric.findMany({
     orderBy: { timestamp: 'desc' },
   });
-  return sanitize(rows);
+  const websites = await prisma.website.findMany();
+  const websiteMap = new Map(websites.map(w => [String(w.id), w]));
+  const enriched = rows.map((r: any) => {
+    const site = websiteMap.get(String(r.websiteId));
+    return {
+      ...r,
+      alertEmail: site ? site.alertEmail : null,
+      emailStatus: site ? site.emailStatus : null,
+      domainEmailStatus: site ? site.domainEmailStatus : null,
+    };
+  });
+  return sanitize(enriched);
 }
 
 export async function createMetric(metric: any) {

@@ -20,6 +20,11 @@ model Website {
   lastCapture      String? @db.VarChar(50)
   error            String? @db.Text
   lastCaptureImage String? @db.VarChar(255)
+  alertEmail             String? @db.VarChar(255)
+  emailStatus            String? @default("No Alert") @db.VarChar(100)
+  lastAlertSentAt        DateTime? @map("last_alert_sent_at")
+  domainEmailStatus      String? @default("No Alert") @db.VarChar(100)
+  lastDomainAlertSentAt  DateTime? @map("last_domain_alert_sent_at")
 
   @@map("websites")
 }

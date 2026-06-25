@@ -35,19 +35,33 @@ export async function createWebsite(site) {
       lastStatus: site.lastStatus || null,
       lastCapture: site.lastCapture || null,
       error: site.error || null,
-      lastCaptureImage: site.lastCaptureImage || null
+      lastCaptureImage: site.lastCaptureImage || null,
+      alertEmail: site.alertEmail || null,
+      emailStatus: site.emailStatus || 'No Alert',
+      lastAlertSentAt: site.lastAlertSentAt ? new Date(site.lastAlertSentAt) : null,
+      domainEmailStatus: site.domainEmailStatus || 'No Alert',
+      lastDomainAlertSentAt: site.lastDomainAlertSentAt ? new Date(site.lastDomainAlertSentAt) : null
     }
   });
   return sanitize(created);
 }
 
 export async function updateWebsite(id, fields) {
-  const allowedFields = ['name', 'url', 'status', 'lastStatus', 'lastCapture', 'error', 'lastCaptureImage'];
+  const allowedFields = [
+    'name', 'url', 'status', 'lastStatus', 'lastCapture', 'error', 'lastCaptureImage',
+    'alertEmail', 'emailStatus', 'lastAlertSentAt', 'domainEmailStatus', 'lastDomainAlertSentAt'
+  ];
   const data = {};
   for (const key of allowedFields) {
     if (fields[key] !== undefined) {
       data[key] = fields[key];
     }
+  }
+  if (data.lastAlertSentAt !== undefined && data.lastAlertSentAt !== null) {
+    data.lastAlertSentAt = new Date(data.lastAlertSentAt);
+  }
+  if (data.lastDomainAlertSentAt !== undefined && data.lastDomainAlertSentAt !== null) {
+    data.lastDomainAlertSentAt = new Date(data.lastDomainAlertSentAt);
   }
   const updated = await prisma.website.update({
     where: { id: BigInt(id) },
@@ -76,7 +90,12 @@ export async function bulkInsertWebsites(sites) {
     lastStatus: s.lastStatus || null,
     lastCapture: s.lastCapture || null,
     error: s.error || null,
-    lastCaptureImage: s.lastCaptureImage || null
+    lastCaptureImage: s.lastCaptureImage || null,
+    alertEmail: s.alertEmail || null,
+    emailStatus: s.emailStatus || 'No Alert',
+    lastAlertSentAt: s.lastAlertSentAt ? new Date(s.lastAlertSentAt) : null,
+    domainEmailStatus: s.domainEmailStatus || 'No Alert',
+    lastDomainAlertSentAt: s.lastDomainAlertSentAt ? new Date(s.lastDomainAlertSentAt) : null
   }));
   await prisma.website.createMany({
     data
@@ -320,7 +339,18 @@ export async function getMetrics() {
   const rows = await prisma.metric.findMany({
     orderBy: { timestamp: 'desc' }
   });
-  return sanitize(rows);
+  const websites = await prisma.website.findMany();
+  const websiteMap = new Map(websites.map(w => [String(w.id), w]));
+  const enriched = rows.map(r => {
+    const site = websiteMap.get(String(r.websiteId));
+    return {
+      ...r,
+      alertEmail: site ? site.alertEmail : null,
+      emailStatus: site ? site.emailStatus : null,
+      domainEmailStatus: site ? site.domainEmailStatus : null
+    };
+  });
+  return sanitize(enriched);
 }
 
 export async function createMetric(metric) {

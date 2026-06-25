@@ -1664,6 +1664,11 @@ export namespace Prisma {
     lastCapture: string | null
     error: string | null
     lastCaptureImage: string | null
+    alertEmail: string | null
+    emailStatus: string | null
+    lastAlertSentAt: Date | null
+    domainEmailStatus: string | null
+    lastDomainAlertSentAt: Date | null
   }
 
   export type WebsiteMaxAggregateOutputType = {
@@ -1675,6 +1680,11 @@ export namespace Prisma {
     lastCapture: string | null
     error: string | null
     lastCaptureImage: string | null
+    alertEmail: string | null
+    emailStatus: string | null
+    lastAlertSentAt: Date | null
+    domainEmailStatus: string | null
+    lastDomainAlertSentAt: Date | null
   }
 
   export type WebsiteCountAggregateOutputType = {
@@ -1686,6 +1696,11 @@ export namespace Prisma {
     lastCapture: number
     error: number
     lastCaptureImage: number
+    alertEmail: number
+    emailStatus: number
+    lastAlertSentAt: number
+    domainEmailStatus: number
+    lastDomainAlertSentAt: number
     _all: number
   }
 
@@ -1707,6 +1722,11 @@ export namespace Prisma {
     lastCapture?: true
     error?: true
     lastCaptureImage?: true
+    alertEmail?: true
+    emailStatus?: true
+    lastAlertSentAt?: true
+    domainEmailStatus?: true
+    lastDomainAlertSentAt?: true
   }
 
   export type WebsiteMaxAggregateInputType = {
@@ -1718,6 +1738,11 @@ export namespace Prisma {
     lastCapture?: true
     error?: true
     lastCaptureImage?: true
+    alertEmail?: true
+    emailStatus?: true
+    lastAlertSentAt?: true
+    domainEmailStatus?: true
+    lastDomainAlertSentAt?: true
   }
 
   export type WebsiteCountAggregateInputType = {
@@ -1729,6 +1754,11 @@ export namespace Prisma {
     lastCapture?: true
     error?: true
     lastCaptureImage?: true
+    alertEmail?: true
+    emailStatus?: true
+    lastAlertSentAt?: true
+    domainEmailStatus?: true
+    lastDomainAlertSentAt?: true
     _all?: true
   }
 
@@ -1827,6 +1857,11 @@ export namespace Prisma {
     lastCapture: string | null
     error: string | null
     lastCaptureImage: string | null
+    alertEmail: string | null
+    emailStatus: string | null
+    lastAlertSentAt: Date | null
+    domainEmailStatus: string | null
+    lastDomainAlertSentAt: Date | null
     _count: WebsiteCountAggregateOutputType | null
     _avg: WebsiteAvgAggregateOutputType | null
     _sum: WebsiteSumAggregateOutputType | null
@@ -1857,6 +1892,11 @@ export namespace Prisma {
     lastCapture?: boolean
     error?: boolean
     lastCaptureImage?: boolean
+    alertEmail?: boolean
+    emailStatus?: boolean
+    lastAlertSentAt?: boolean
+    domainEmailStatus?: boolean
+    lastDomainAlertSentAt?: boolean
   }, ExtArgs["result"]["website"]>
 
 
@@ -1870,9 +1910,14 @@ export namespace Prisma {
     lastCapture?: boolean
     error?: boolean
     lastCaptureImage?: boolean
+    alertEmail?: boolean
+    emailStatus?: boolean
+    lastAlertSentAt?: boolean
+    domainEmailStatus?: boolean
+    lastDomainAlertSentAt?: boolean
   }
 
-  export type WebsiteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "url" | "status" | "lastStatus" | "lastCapture" | "error" | "lastCaptureImage", ExtArgs["result"]["website"]>
+  export type WebsiteOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "name" | "url" | "status" | "lastStatus" | "lastCapture" | "error" | "lastCaptureImage" | "alertEmail" | "emailStatus" | "lastAlertSentAt" | "domainEmailStatus" | "lastDomainAlertSentAt", ExtArgs["result"]["website"]>
 
   export type $WebsitePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "Website"
@@ -1886,6 +1931,11 @@ export namespace Prisma {
       lastCapture: string | null
       error: string | null
       lastCaptureImage: string | null
+      alertEmail: string | null
+      emailStatus: string | null
+      lastAlertSentAt: Date | null
+      domainEmailStatus: string | null
+      lastDomainAlertSentAt: Date | null
     }, ExtArgs["result"]["website"]>
     composites: {}
   }
@@ -2263,6 +2313,11 @@ export namespace Prisma {
     readonly lastCapture: FieldRef<"Website", 'String'>
     readonly error: FieldRef<"Website", 'String'>
     readonly lastCaptureImage: FieldRef<"Website", 'String'>
+    readonly alertEmail: FieldRef<"Website", 'String'>
+    readonly emailStatus: FieldRef<"Website", 'String'>
+    readonly lastAlertSentAt: FieldRef<"Website", 'DateTime'>
+    readonly domainEmailStatus: FieldRef<"Website", 'String'>
+    readonly lastDomainAlertSentAt: FieldRef<"Website", 'DateTime'>
   }
     
 
@@ -11295,7 +11350,12 @@ export namespace Prisma {
     lastStatus: 'lastStatus',
     lastCapture: 'lastCapture',
     error: 'error',
-    lastCaptureImage: 'lastCaptureImage'
+    lastCaptureImage: 'lastCaptureImage',
+    alertEmail: 'alertEmail',
+    emailStatus: 'emailStatus',
+    lastAlertSentAt: 'lastAlertSentAt',
+    domainEmailStatus: 'domainEmailStatus',
+    lastDomainAlertSentAt: 'lastDomainAlertSentAt'
   };
 
   export type WebsiteScalarFieldEnum = (typeof WebsiteScalarFieldEnum)[keyof typeof WebsiteScalarFieldEnum]
@@ -11444,7 +11504,10 @@ export namespace Prisma {
     lastStatus: 'lastStatus',
     lastCapture: 'lastCapture',
     error: 'error',
-    lastCaptureImage: 'lastCaptureImage'
+    lastCaptureImage: 'lastCaptureImage',
+    alertEmail: 'alertEmail',
+    emailStatus: 'emailStatus',
+    domainEmailStatus: 'domainEmailStatus'
   };
 
   export type WebsiteOrderByRelevanceFieldEnum = (typeof WebsiteOrderByRelevanceFieldEnum)[keyof typeof WebsiteOrderByRelevanceFieldEnum]
@@ -11558,16 +11621,16 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Int'
+   * Reference to a field of type 'DateTime'
    */
-  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
+  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
     
 
 
   /**
-   * Reference to a field of type 'DateTime'
+   * Reference to a field of type 'Int'
    */
-  export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+  export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
     
 
 
@@ -11600,6 +11663,11 @@ export namespace Prisma {
     lastCapture?: StringNullableFilter<"Website"> | string | null
     error?: StringNullableFilter<"Website"> | string | null
     lastCaptureImage?: StringNullableFilter<"Website"> | string | null
+    alertEmail?: StringNullableFilter<"Website"> | string | null
+    emailStatus?: StringNullableFilter<"Website"> | string | null
+    lastAlertSentAt?: DateTimeNullableFilter<"Website"> | Date | string | null
+    domainEmailStatus?: StringNullableFilter<"Website"> | string | null
+    lastDomainAlertSentAt?: DateTimeNullableFilter<"Website"> | Date | string | null
   }
 
   export type WebsiteOrderByWithRelationInput = {
@@ -11611,6 +11679,11 @@ export namespace Prisma {
     lastCapture?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
     lastCaptureImage?: SortOrderInput | SortOrder
+    alertEmail?: SortOrderInput | SortOrder
+    emailStatus?: SortOrderInput | SortOrder
+    lastAlertSentAt?: SortOrderInput | SortOrder
+    domainEmailStatus?: SortOrderInput | SortOrder
+    lastDomainAlertSentAt?: SortOrderInput | SortOrder
     _relevance?: WebsiteOrderByRelevanceInput
   }
 
@@ -11626,6 +11699,11 @@ export namespace Prisma {
     lastCapture?: StringNullableFilter<"Website"> | string | null
     error?: StringNullableFilter<"Website"> | string | null
     lastCaptureImage?: StringNullableFilter<"Website"> | string | null
+    alertEmail?: StringNullableFilter<"Website"> | string | null
+    emailStatus?: StringNullableFilter<"Website"> | string | null
+    lastAlertSentAt?: DateTimeNullableFilter<"Website"> | Date | string | null
+    domainEmailStatus?: StringNullableFilter<"Website"> | string | null
+    lastDomainAlertSentAt?: DateTimeNullableFilter<"Website"> | Date | string | null
   }, "id">
 
   export type WebsiteOrderByWithAggregationInput = {
@@ -11637,6 +11715,11 @@ export namespace Prisma {
     lastCapture?: SortOrderInput | SortOrder
     error?: SortOrderInput | SortOrder
     lastCaptureImage?: SortOrderInput | SortOrder
+    alertEmail?: SortOrderInput | SortOrder
+    emailStatus?: SortOrderInput | SortOrder
+    lastAlertSentAt?: SortOrderInput | SortOrder
+    domainEmailStatus?: SortOrderInput | SortOrder
+    lastDomainAlertSentAt?: SortOrderInput | SortOrder
     _count?: WebsiteCountOrderByAggregateInput
     _avg?: WebsiteAvgOrderByAggregateInput
     _max?: WebsiteMaxOrderByAggregateInput
@@ -11656,6 +11739,11 @@ export namespace Prisma {
     lastCapture?: StringNullableWithAggregatesFilter<"Website"> | string | null
     error?: StringNullableWithAggregatesFilter<"Website"> | string | null
     lastCaptureImage?: StringNullableWithAggregatesFilter<"Website"> | string | null
+    alertEmail?: StringNullableWithAggregatesFilter<"Website"> | string | null
+    emailStatus?: StringNullableWithAggregatesFilter<"Website"> | string | null
+    lastAlertSentAt?: DateTimeNullableWithAggregatesFilter<"Website"> | Date | string | null
+    domainEmailStatus?: StringNullableWithAggregatesFilter<"Website"> | string | null
+    lastDomainAlertSentAt?: DateTimeNullableWithAggregatesFilter<"Website"> | Date | string | null
   }
 
   export type ReportWhereInput = {
@@ -12273,6 +12361,11 @@ export namespace Prisma {
     lastCapture?: string | null
     error?: string | null
     lastCaptureImage?: string | null
+    alertEmail?: string | null
+    emailStatus?: string | null
+    lastAlertSentAt?: Date | string | null
+    domainEmailStatus?: string | null
+    lastDomainAlertSentAt?: Date | string | null
   }
 
   export type WebsiteUncheckedCreateInput = {
@@ -12284,6 +12377,11 @@ export namespace Prisma {
     lastCapture?: string | null
     error?: string | null
     lastCaptureImage?: string | null
+    alertEmail?: string | null
+    emailStatus?: string | null
+    lastAlertSentAt?: Date | string | null
+    domainEmailStatus?: string | null
+    lastDomainAlertSentAt?: Date | string | null
   }
 
   export type WebsiteUpdateInput = {
@@ -12295,6 +12393,11 @@ export namespace Prisma {
     lastCapture?: NullableStringFieldUpdateOperationsInput | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     lastCaptureImage?: NullableStringFieldUpdateOperationsInput | string | null
+    alertEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    emailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domainEmailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastDomainAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type WebsiteUncheckedUpdateInput = {
@@ -12306,6 +12409,11 @@ export namespace Prisma {
     lastCapture?: NullableStringFieldUpdateOperationsInput | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     lastCaptureImage?: NullableStringFieldUpdateOperationsInput | string | null
+    alertEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    emailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domainEmailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastDomainAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type WebsiteCreateManyInput = {
@@ -12317,6 +12425,11 @@ export namespace Prisma {
     lastCapture?: string | null
     error?: string | null
     lastCaptureImage?: string | null
+    alertEmail?: string | null
+    emailStatus?: string | null
+    lastAlertSentAt?: Date | string | null
+    domainEmailStatus?: string | null
+    lastDomainAlertSentAt?: Date | string | null
   }
 
   export type WebsiteUpdateManyMutationInput = {
@@ -12328,6 +12441,11 @@ export namespace Prisma {
     lastCapture?: NullableStringFieldUpdateOperationsInput | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     lastCaptureImage?: NullableStringFieldUpdateOperationsInput | string | null
+    alertEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    emailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domainEmailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastDomainAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type WebsiteUncheckedUpdateManyInput = {
@@ -12339,6 +12457,11 @@ export namespace Prisma {
     lastCapture?: NullableStringFieldUpdateOperationsInput | string | null
     error?: NullableStringFieldUpdateOperationsInput | string | null
     lastCaptureImage?: NullableStringFieldUpdateOperationsInput | string | null
+    alertEmail?: NullableStringFieldUpdateOperationsInput | string | null
+    emailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    domainEmailStatus?: NullableStringFieldUpdateOperationsInput | string | null
+    lastDomainAlertSentAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
   export type ReportCreateInput = {
@@ -13021,6 +13144,17 @@ export namespace Prisma {
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
   }
 
+  export type DateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
+  }
+
   export type SortOrderInput = {
     sort: SortOrder
     nulls?: NullsOrder
@@ -13041,6 +13175,11 @@ export namespace Prisma {
     lastCapture?: SortOrder
     error?: SortOrder
     lastCaptureImage?: SortOrder
+    alertEmail?: SortOrder
+    emailStatus?: SortOrder
+    lastAlertSentAt?: SortOrder
+    domainEmailStatus?: SortOrder
+    lastDomainAlertSentAt?: SortOrder
   }
 
   export type WebsiteAvgOrderByAggregateInput = {
@@ -13056,6 +13195,11 @@ export namespace Prisma {
     lastCapture?: SortOrder
     error?: SortOrder
     lastCaptureImage?: SortOrder
+    alertEmail?: SortOrder
+    emailStatus?: SortOrder
+    lastAlertSentAt?: SortOrder
+    domainEmailStatus?: SortOrder
+    lastDomainAlertSentAt?: SortOrder
   }
 
   export type WebsiteMinOrderByAggregateInput = {
@@ -13067,6 +13211,11 @@ export namespace Prisma {
     lastCapture?: SortOrder
     error?: SortOrder
     lastCaptureImage?: SortOrder
+    alertEmail?: SortOrder
+    emailStatus?: SortOrder
+    lastAlertSentAt?: SortOrder
+    domainEmailStatus?: SortOrder
+    lastDomainAlertSentAt?: SortOrder
   }
 
   export type WebsiteSumOrderByAggregateInput = {
@@ -13123,6 +13272,20 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
+  }
+
+  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type IntFilter<$PrismaModel = never> = {
@@ -13571,17 +13734,6 @@ export namespace Prisma {
     id?: SortOrder
   }
 
-  export type DateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
   export type MetricOrderByRelevanceInput = {
     fields: MetricOrderByRelevanceFieldEnum | MetricOrderByRelevanceFieldEnum[]
     sort: SortOrder
@@ -13670,20 +13822,6 @@ export namespace Prisma {
     domainDaysRemaining?: SortOrder
   }
 
-  export type DateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
-  }
-
   export type BigIntFieldUpdateOperationsInput = {
     set?: bigint | number
     increment?: bigint | number
@@ -13698,6 +13836,10 @@ export namespace Prisma {
 
   export type NullableStringFieldUpdateOperationsInput = {
     set?: string | null
+  }
+
+  export type NullableDateTimeFieldUpdateOperationsInput = {
+    set?: Date | string | null
   }
 
   export type ReportDetailCreateNestedManyWithoutReportInput = {
@@ -13780,10 +13922,6 @@ export namespace Prisma {
     set?: boolean
   }
 
-  export type NullableDateTimeFieldUpdateOperationsInput = {
-    set?: Date | string | null
-  }
-
   export type NestedBigIntFilter<$PrismaModel = never> = {
     equals?: bigint | number | BigIntFieldRefInput<$PrismaModel>
     in?: bigint[] | number[]
@@ -13823,6 +13961,17 @@ export namespace Prisma {
     endsWith?: string | StringFieldRefInput<$PrismaModel>
     search?: string
     not?: NestedStringNullableFilter<$PrismaModel> | string | null
+  }
+
+  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
   }
 
   export type NestedBigIntWithAggregatesFilter<$PrismaModel = never> = {
@@ -13910,6 +14059,20 @@ export namespace Prisma {
     not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
+  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
+    in?: Date[] | string[] | null
+    notIn?: Date[] | string[] | null
+    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
+    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _min?: NestedDateTimeNullableFilter<$PrismaModel>
+    _max?: NestedDateTimeNullableFilter<$PrismaModel>
+  }
+
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>
     in?: number[]
@@ -13989,31 +14152,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedBoolFilter<$PrismaModel>
     _max?: NestedBoolFilter<$PrismaModel>
-  }
-
-  export type NestedDateTimeNullableFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableFilter<$PrismaModel> | Date | string | null
-  }
-
-  export type NestedDateTimeNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Date | string | DateTimeFieldRefInput<$PrismaModel> | null
-    in?: Date[] | string[] | null
-    notIn?: Date[] | string[] | null
-    lt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    lte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>
-    not?: NestedDateTimeNullableWithAggregatesFilter<$PrismaModel> | Date | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedDateTimeNullableFilter<$PrismaModel>
-    _max?: NestedDateTimeNullableFilter<$PrismaModel>
   }
 
   export type ReportDetailCreateWithoutReportInput = {

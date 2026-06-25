@@ -50,6 +50,11 @@ export async function POST(request: NextRequest) {
       lastCapture: '-',
       error: null,
       lastCaptureImage: null,
+      alertEmail: body.alertEmail || null,
+      emailStatus: body.emailStatus || 'No Alert',
+      lastAlertSentAt: body.lastAlertSentAt ? new Date(body.lastAlertSentAt) : null,
+      domainEmailStatus: body.domainEmailStatus || 'No Alert',
+      lastDomainAlertSentAt: body.lastDomainAlertSentAt ? new Date(body.lastDomainAlertSentAt) : null,
     };
 
     const created = await prisma.website.create({

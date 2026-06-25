@@ -23,7 +23,7 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
   ];
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ maxWidth: 1100, width: "100%" }}>
       <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Dashboard</h1>
@@ -33,7 +33,7 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
 
 
       {/* Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16, marginBottom: 24 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" style={{ marginBottom: 24 }}>
         {statCards.map(c => (
           <div key={c.label} style={{ ...S.card, padding: "18px 20px", borderTop: `3px solid ${c.color}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -48,37 +48,39 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
         ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-5">
         {/* Reports Table */}
-        <div style={S.card}>
+        <div style={S.card} className="overflow-hidden">
           <div style={{ padding: "14px 18px", borderBottom: "1px solid #1e2130", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontWeight: 600, fontSize: 14, color: "#f1f5f9" }}>Recent Reports</span>
             <span style={{ fontSize: 12, color: "#6366f1" }}>History log</span>
           </div>
-          <table style={{ minWidth: "100%" }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #1e2130", background: "#0f1117" }}>
-                {["Date", "Time", "Total", "✓ Success", "✗ Failed", ""].map(h => <th key={h} style={S.th}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {reports.slice(0, 7).map((r, i) => (
-                <tr key={r.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                  <td style={S.td({ color: "#e2e8f0" })}>{r.date}</td>
-                  <td style={S.td({ color: "#94a3b8" })}>{r.time}</td>
-                  <td style={S.td({ color: "#94a3b8" })}>{r.total}</td>
-                  <td style={S.td({ color: "#22c55e", fontWeight: 600 })}>{r.success}</td>
-                  <td style={S.td({ color: r.failed > 0 ? "#ef4444" : "#64748b", fontWeight: r.failed > 0 ? 600 : 400 })}>{r.failed}</td>
-                  <td style={{ padding: "10px 16px", textAlign: "right" }}>
-                    <button onClick={() => window.open(`/api/reports/${r.id}/pdf`, "_blank")} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
-                  </td>
+          <div className="w-full overflow-x-auto">
+            <table style={{ minWidth: "100%" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid #1e2130", background: "#0f1117" }}>
+                  {["Date", "Time", "Total", "✓ Success", "✗ Failed", ""].map(h => <th key={h} style={S.th}>{h}</th>)}
                 </tr>
-              ))}
-              {reports.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>No reports generated yet</td></tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {reports.slice(0, 7).map((r, i) => (
+                  <tr key={r.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                    <td style={S.td({ color: "#e2e8f0" })}>{r.date}</td>
+                    <td style={S.td({ color: "#94a3b8" })}>{r.time}</td>
+                    <td style={S.td({ color: "#94a3b8" })}>{r.total}</td>
+                    <td style={S.td({ color: "#22c55e", fontWeight: 600 })}>{r.success}</td>
+                    <td style={S.td({ color: r.failed > 0 ? "#ef4444" : "#64748b", fontWeight: r.failed > 0 ? 600 : 400 })}>{r.failed}</td>
+                    <td style={{ padding: "10px 16px", textAlign: "right" }}>
+                      <button onClick={() => window.open(`/api/reports/${r.id}/pdf`, "_blank")} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
+                    </td>
+                  </tr>
+                ))}
+                {reports.length === 0 && (
+                  <tr><td colSpan={6} style={{ padding: 30, textAlign: "center", color: "#64748b" }}>No reports generated yet</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Right Column */}

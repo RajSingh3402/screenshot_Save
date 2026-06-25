@@ -41,12 +41,25 @@ export async function PUT(
       'lastCapture',
       'error',
       'lastCaptureImage',
+      'alertEmail',
+      'emailStatus',
+      'lastAlertSentAt',
+      'domainEmailStatus',
+      'lastDomainAlertSentAt',
     ];
     const dataToUpdate: any = {};
     for (const key of allowedFields) {
       if (body[key] !== undefined) {
         dataToUpdate[key] = body[key];
       }
+    }
+
+    if (dataToUpdate.lastAlertSentAt !== undefined && dataToUpdate.lastAlertSentAt !== null) {
+      dataToUpdate.lastAlertSentAt = new Date(dataToUpdate.lastAlertSentAt);
+    }
+
+    if (dataToUpdate.lastDomainAlertSentAt !== undefined && dataToUpdate.lastDomainAlertSentAt !== null) {
+      dataToUpdate.lastDomainAlertSentAt = new Date(dataToUpdate.lastDomainAlertSentAt);
     }
 
     if (targetUrl) {

@@ -45,13 +45,13 @@ export function Reports({ reports, openScreenshot, user, refreshReports }: Repor
   };
 
   return (
-    <div style={{ padding: "28px 32px" }}>
-      <div style={{ marginBottom: 22, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ width: "100%" }}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Reports</h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>All generated PDF reports · Click a row for details</p>
         </div>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
           <button 
             onClick={() => refreshReports && refreshReports()} 
             style={S.btn("linear-gradient(135deg,#6366f1,#8b5cf6)", "#fff", { 

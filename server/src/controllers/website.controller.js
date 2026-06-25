@@ -24,7 +24,12 @@ export async function createWebsite(req, res) {
       lastStatus: 'success',
       lastCapture: '-',
       error: null,
-      lastCaptureImage: null
+      lastCaptureImage: null,
+      alertEmail: req.body.alertEmail || null,
+      emailStatus: req.body.emailStatus || 'No Alert',
+      lastAlertSentAt: req.body.lastAlertSentAt || null,
+      domainEmailStatus: req.body.domainEmailStatus || 'No Alert',
+      lastDomainAlertSentAt: req.body.lastDomainAlertSentAt || null
     };
     await dbService.createWebsite(newSite);
     res.status(201).json(newSite);
@@ -97,7 +102,12 @@ export async function bulkInsertWebsites(req, res) {
         lastStatus: 'success',
         lastCapture: '-',
         error: null,
-        lastCaptureImage: null
+        lastCaptureImage: null,
+        alertEmail: site.alertEmail || null,
+        emailStatus: site.emailStatus || 'No Alert',
+        lastAlertSentAt: site.lastAlertSentAt || null,
+        domainEmailStatus: site.domainEmailStatus || 'No Alert',
+        lastDomainAlertSentAt: site.lastDomainAlertSentAt || null
       };
     });
     await dbService.bulkInsertWebsites(newSites);

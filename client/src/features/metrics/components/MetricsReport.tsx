@@ -169,16 +169,16 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
   ];
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1200 }}>
+    <div className="mx-auto px-6 pb-6 pt-10 sm:px-8 sm:pb-8 sm:pt-12 lg:px-10 lg:pb-10 lg:pt-16 metrics-container" style={{ maxWidth: 1400, width: "100%", margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-10">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Metrics Report Portal</h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
             Active checks history, certificate expiries, domain logs, and security checks summary
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
           <button 
             onClick={handleRefresh} 
             disabled={refreshing}
@@ -203,7 +203,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 12, marginBottom: 24 }}>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {statCards.map(c => (
           <div key={c.label} style={{ ...S.card, padding: "16px 18px", borderTop: `3px solid ${c.color}` }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -218,7 +218,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       </div>
 
       {/* Main Tabs Navigation */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #1e2130', marginBottom: 20, gap: 10 }}>
+      <div className="flex flex-wrap border-b border-[#1e2130] mb-5 gap-2">
         <button 
           onClick={() => setMainTab('latest')}
           style={{
@@ -257,7 +257,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       {mainTab === 'latest' ? (
         <div>
           {/* Sub-tabs for Latest Metrics */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          <div className="flex flex-wrap gap-2 mb-4">
             {[
               { id: 'ssl', label: 'SSL Monitoring', icon: '🔐' },
               { id: 'domain', label: 'Domain Monitoring', icon: '🌐' },
@@ -283,161 +283,178 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
             ))}
           </div>
 
-          <div style={S.card}>
+          <div style={S.card} className="overflow-hidden">
             {/* SSL MONITORING */}
             {subTab === 'ssl' && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-                    {["Website Name", "Website URL", "SSL Status", "Expiry Date", "Days Remaining", "SSL Alert"].map(h => (
-                      <th key={h} style={S.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {latestList.map((item: any, i) => {
-                    const warn = item.sslWarning;
-                    return (
-                      <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                        <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{item.name}</td>
-                        <td style={S.td({ color: "#818cf8" })}>{item.url}</td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
-                            background: item.sslStatus === 'Valid' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                            color: item.sslStatus === 'Valid' ? '#4ade80' : '#f87171'
-                          }}>
-                            {item.sslStatus}
-                          </span>
-                        </td>
-                        <td style={S.td({ color: "#94a3b8" })}>{formatDateOnly(item.sslExpiryDate)}</td>
-                        <td style={S.td({ color: warn ? "#ef4444" : "#94a3b8", fontWeight: warn ? 700 : 400 })}>
-                          {item.sslDaysRemaining !== null ? `${item.sslDaysRemaining} Days` : '-'}
-                        </td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: warn ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.15)',
-                            color: warn ? '#f87171' : '#4ade80'
-                          }}>
-                            {warn ? '⚠️ ALERT' : '✓ SECURE'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {latestList.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="w-full overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                      {["Website Name", "Website URL", "SSL Status", "Expiry Date", "Days Remaining", "SSL Alert", "Alert Email", "Email Status"].map(h => (
+                        <th key={h} style={S.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestList.map((item: any, i) => {
+                      const warn = item.sslWarning;
+                      return (
+                        <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                          <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{item.name}</td>
+                          <td style={S.td({ color: "#818cf8" })}>{item.url}</td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600,
+                              background: item.sslStatus === 'Valid' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                              color: item.sslStatus === 'Valid' ? '#4ade80' : '#f87171'
+                            }}>
+                              {item.sslStatus}
+                            </span>
+                          </td>
+                          <td style={S.td({ color: "#94a3b8" })}>{formatDateOnly(item.sslExpiryDate)}</td>
+                          <td style={S.td({ color: warn ? "#ef4444" : "#94a3b8", fontWeight: warn ? 700 : 400 })}>
+                            {item.sslDaysRemaining !== null ? `${item.sslDaysRemaining} Days` : '-'}
+                          </td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: warn ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.15)',
+                              color: warn ? '#f87171' : '#4ade80'
+                            }}>
+                              {warn ? '⚠ Alert' : '✓ Secure'}
+                            </span>
+                          </td>
+                          <td style={S.td({ color: "#94a3b8" })}>{item.alertEmail || '-'}</td>
+                          <td style={S.td({ color: "#94a3b8", fontWeight: item.emailStatus && item.emailStatus !== 'No Alert' ? 600 : 400 })}>{item.emailStatus || 'No Alert'}</td>
+                        </tr>
+                      );
+                    })}
+                    {latestList.length === 0 && (
+                      <tr><td colSpan={8} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {/* DOMAIN MONITORING */}
             {subTab === 'domain' && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-                    {["Domain Name", "Expiry Date", "Days Remaining", "Domain Alert"].map(h => (
-                      <th key={h} style={S.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {latestList.map((item: any, i) => {
-                    const warn = item.domainWarning;
-                    const domainName = item.url ? new URL(item.url).hostname.replace('www.', '') : item.name;
-                    return (
-                      <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                        <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{domainName}</td>
-                        <td style={S.td({ color: "#94a3b8" })}>{formatDateOnly(item.domainExpiryDate)}</td>
-                        <td style={S.td({ color: warn ? "#ef4444" : "#94a3b8", fontWeight: warn ? 700 : 400 })}>
-                          {item.domainDaysRemaining !== null ? `${item.domainDaysRemaining} Days` : '-'}
-                        </td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: warn ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.15)',
-                            color: warn ? '#f87171' : '#4ade80'
-                          }}>
-                            {warn ? '⚠️ ALERT' : '✓ SECURE'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {latestList.length === 0 && (
-                    <tr><td colSpan={4} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="w-full overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                      {["Website Name", "Website URL", "Domain Name", "Expiry Date", "Days Remaining", "Domain Alert", "Alert Email", "Email Status"].map(h => (
+                        <th key={h} style={S.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestList.map((item: any, i) => {
+                      const warn = item.domainWarning;
+                      let domainName = item.name;
+                      try {
+                        domainName = item.url ? new URL(item.url).hostname.replace('www.', '') : item.name;
+                      } catch (e) {}
+                      return (
+                        <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                          <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{item.name}</td>
+                          <td style={S.td({ color: "#818cf8" })}>{item.url}</td>
+                          <td style={S.td({ color: "#94a3b8" })}>{domainName}</td>
+                          <td style={S.td({ color: "#94a3b8" })}>{formatDateOnly(item.domainExpiryDate)}</td>
+                          <td style={S.td({ color: warn ? "#ef4444" : "#94a3b8", fontWeight: warn ? 700 : 400 })}>
+                            {item.domainDaysRemaining !== null ? `${item.domainDaysRemaining} Days` : '-'}
+                          </td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: warn ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.15)',
+                              color: warn ? '#f87171' : '#4ade80'
+                            }}>
+                              {warn ? '⚠️ ALERT' : '✓ SECURE'}
+                            </span>
+                          </td>
+                          <td style={S.td({ color: "#94a3b8" })}>{item.alertEmail || '-'}</td>
+                          <td style={S.td({ color: "#94a3b8", fontWeight: item.domainEmailStatus && item.domainEmailStatus !== 'No Alert' ? 600 : 400 })}>
+                            {item.domainEmailStatus || 'No Alert'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {latestList.length === 0 && (
+                      <tr><td colSpan={8} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {/* MALWARE MONITORING */}
             {subTab === 'malware' && (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
-                    {["Website Name", "Domain", "Safe Browsing", "Malware Status", "Phishing Status", "Blacklist Status"].map(h => (
-                      <th key={h} style={S.th}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {latestList.map((item: any, i) => {
-                    const isSafe = item.safeBrowsingStatus === 'Safe';
-                    const isMalwareClean = item.malwareStatus === 'Clean';
-                    const isPhishClean = item.phishingStatus === 'Clean';
-                    const isBlacklistClean = item.blacklistStatus === 'Clean';
-                    const domainName = item.url ? new URL(item.url).hostname.replace('www.', '') : item.name;
-                    return (
-                      <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
-                        <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{item.name}</td>
-                        <td style={S.td({ color: "#94a3b8" })}>{domainName}</td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: isSafe ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
-                            color: isSafe ? '#4ade80' : '#f87171'
-                          }}>
-                            {item.safeBrowsingStatus}
-                          </span>
-                        </td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: isMalwareClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
-                            color: isMalwareClean ? '#4ade80' : '#f87171'
-                          }}>
-                            {item.malwareStatus}
-                          </span>
-                        </td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: isPhishClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
-                            color: isPhishClean ? '#4ade80' : '#f87171'
-                          }}>
-                            {item.phishingStatus}
-                          </span>
-                        </td>
-                        <td style={S.td()}>
-                          <span style={{
-                            padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
-                            background: isBlacklistClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
-                            color: isBlacklistClean ? '#4ade80' : '#f87171'
-                          }}>
-                            {item.blacklistStatus}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {latestList.length === 0 && (
-                    <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="w-full overflow-x-auto">
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>
+                      {["Website Name", "Domain", "Safe Browsing", "Malware Status", "Phishing Status", "Blacklist Status"].map(h => (
+                        <th key={h} style={S.th}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {latestList.map((item: any, i) => {
+                      const isSafe = item.safeBrowsingStatus === 'Safe';
+                      const isMalwareClean = item.malwareStatus === 'Clean';
+                      const isPhishClean = item.phishingStatus === 'Clean';
+                      const isBlacklistClean = item.blacklistStatus === 'Clean';
+                      const domainName = item.url ? new URL(item.url).hostname.replace('www.', '') : item.name;
+                      return (
+                        <tr key={item.id} style={{ borderBottom: "1px solid #1e213060", background: i % 2 === 0 ? "transparent" : "#ffffff05" }}>
+                          <td style={S.td({ color: "#f1f5f9", fontWeight: 600 })}>{item.name}</td>
+                          <td style={S.td({ color: "#94a3b8" })}>{domainName}</td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: isSafe ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
+                              color: isSafe ? '#4ade80' : '#f87171'
+                            }}>
+                              {item.safeBrowsingStatus}
+                            </span>
+                          </td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: isMalwareClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
+                              color: isMalwareClean ? '#4ade80' : '#f87171'
+                            }}>
+                              {item.malwareStatus}
+                            </span>
+                          </td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: isPhishClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
+                              color: isPhishClean ? '#4ade80' : '#f87171'
+                            }}>
+                              {item.phishingStatus}
+                            </span>
+                          </td>
+                          <td style={S.td()}>
+                            <span style={{
+                              padding: "3px 8px", borderRadius: 4, fontSize: 10, fontWeight: 700,
+                              background: isBlacklistClean ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.2)',
+                              color: isBlacklistClean ? '#4ade80' : '#f87171'
+                            }}>
+                              {item.blacklistStatus}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {latestList.length === 0 && (
+                      <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: '#64748b' }}>No website metrics found. Run a capture session to generate.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

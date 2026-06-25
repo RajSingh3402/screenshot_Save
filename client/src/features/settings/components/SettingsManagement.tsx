@@ -408,7 +408,7 @@ export function SettingsManagement() {
   const lastExecStatus = latestLog ? latestLog.status : 'None';
 
   return (
-    <div style={{ padding: '28px 32px', maxWidth: 1000, position: 'relative', display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ maxWidth: 1000, position: 'relative', display: 'flex', flexDirection: 'column', gap: 24, width: "100%" }}>
       
       {/* Toast Notification Container */}
       <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 350 }}>
@@ -453,7 +453,7 @@ export function SettingsManagement() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Column: SMTP & Status Overview */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

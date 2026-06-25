@@ -128,7 +128,12 @@ exports.Prisma.WebsiteScalarFieldEnum = {
   lastStatus: 'lastStatus',
   lastCapture: 'lastCapture',
   error: 'error',
-  lastCaptureImage: 'lastCaptureImage'
+  lastCaptureImage: 'lastCaptureImage',
+  alertEmail: 'alertEmail',
+  emailStatus: 'emailStatus',
+  lastAlertSentAt: 'lastAlertSentAt',
+  domainEmailStatus: 'domainEmailStatus',
+  lastDomainAlertSentAt: 'lastDomainAlertSentAt'
 };
 
 exports.Prisma.ReportScalarFieldEnum = {
@@ -241,7 +246,10 @@ exports.Prisma.WebsiteOrderByRelevanceFieldEnum = {
   lastStatus: 'lastStatus',
   lastCapture: 'lastCapture',
   error: 'error',
-  lastCaptureImage: 'lastCaptureImage'
+  lastCaptureImage: 'lastCaptureImage',
+  alertEmail: 'alertEmail',
+  emailStatus: 'emailStatus',
+  domainEmailStatus: 'domainEmailStatus'
 };
 
 exports.Prisma.ReportOrderByRelevanceFieldEnum = {

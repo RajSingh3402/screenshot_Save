@@ -6,7 +6,7 @@ import { checkSSL } from './sslService';
 import { checkDomainExpiry } from './domainService';
 import { checkMalware } from './malwareService';
 import { generatePdfReport } from './pdfService';
-import { sendEmailNotification } from './emailService';
+import { sendEmailNotification, sendSslExpiryAlert, sendDomainExpiryAlert } from './emailService';
 
 // Helper function to auto-scroll page to load lazy content
 async function autoScroll(page: Page) {
@@ -428,6 +428,223 @@ export async function runCaptureSession(triggerName = 'Manual Trigger'): Promise
       });
     } catch (dbErr: any) {
       console.error(`Failed to update website state in database for ${site.name}:`, dbErr);
+    }
+
+    // SSL Expiry Email Alert Logic
+    if (site.alertEmail) {
+      console.log(`[Alert System] Checking SSL expiry alert for ${site.name} (Alert Email: ${site.alertEmail})...`);
+      
+      const daysRemaining = sslRes.daysRemaining;
+      const sslStatus = sslRes.status;
+      
+      let expectedStatus = 'No Alert';
+      let alertLevel = '';
+      let shouldSend = false;
+      
+      if (sslStatus === 'Expired' || (daysRemaining !== null && daysRemaining <= 0)) {
+        expectedStatus = '🚨 Expired Alert Sent';
+        alertLevel = 'SSL Expired';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 7) {
+        expectedStatus = '🚨 Critical Sent';
+        alertLevel = 'SSL Critical Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 15) {
+        expectedStatus = '🚨 Urgent Sent';
+        alertLevel = 'SSL Urgent Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 30) {
+        expectedStatus = '⚠ Warning Sent';
+        alertLevel = 'SSL Priority Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 60) {
+        expectedStatus = '📧 Sent';
+        alertLevel = 'SSL Warning';
+        shouldSend = true;
+      }
+      
+      const currentEmailStatus = site.emailStatus || 'No Alert';
+      
+      if (currentEmailStatus !== expectedStatus) {
+        console.log(`[Alert System] Alert status changed from "${currentEmailStatus}" to "${expectedStatus}" for ${site.name}.`);
+        
+        if (shouldSend) {
+          try {
+            const websiteStatus = siteSuccess ? 'Online' : 'Offline';
+            const domainStatus = domainRes.warning ? 'Warning' : 'Secure';
+            
+            let malwareStatus = 'Clean';
+            if (
+              malwareRes.safeBrowsingStatus !== 'Safe' || 
+              malwareRes.malwareStatus !== 'Clean' || 
+              malwareRes.phishingStatus !== 'Clean' || 
+              malwareRes.blacklistStatus !== 'Clean'
+            ) {
+              malwareStatus = 'Threat Detected';
+            }
+            
+            const lastScanTime = new Date().toLocaleString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+            
+            const expiryDateStr = sslRes.expiryDate ? new Date(sslRes.expiryDate).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }) : 'N/A';
+            
+            await sendSslExpiryAlert({
+              alertEmail: site.alertEmail,
+              websiteName: site.name,
+              websiteUrl: site.url,
+              sslStatus: sslStatus,
+              expiryDate: expiryDateStr,
+              daysRemaining: daysRemaining !== null ? daysRemaining : 'Unknown',
+              alertLevel: alertLevel,
+              websiteStatus,
+              domainStatus,
+              malwareStatus,
+              lastScanTime
+            });
+            
+            console.log(`[Alert System] SSL expiry alert email sent successfully to ${site.alertEmail}.`);
+          } catch (mailErr: any) {
+            console.error(`[Alert System] Failed to send SSL expiry email alert for ${site.name}:`, mailErr.message);
+          }
+        }
+        
+        try {
+          await prisma.website.update({
+            where: { id: BigInt(site.id) },
+            data: {
+              emailStatus: expectedStatus,
+              lastAlertSentAt: shouldSend ? new Date() : null
+            }
+          });
+          console.log(`[Alert System] Website ${site.name} email status updated to "${expectedStatus}"`);
+        } catch (dbErr: any) {
+          console.error(`[Alert System] Failed to update website alert status in database:`, dbErr.message);
+        }
+      } else {
+        console.log(`[Alert System] Alert status unchanged ("${currentEmailStatus}"). No email sent.`);
+      }
+    }
+
+    // Domain Expiry Email Alert Logic
+    if (site.alertEmail) {
+      console.log(`[Alert System] Checking Domain expiry alert for ${site.name} (Alert Email: ${site.alertEmail})...`);
+      
+      const daysRemaining = domainRes.daysRemaining;
+      const domainWarning = domainRes.warning;
+      
+      let expectedStatus = 'No Alert';
+      let alertLevel = '';
+      let shouldSend = false;
+      
+      if (daysRemaining !== null && daysRemaining <= 0) {
+        expectedStatus = 'Expired Alert Sent';
+        alertLevel = 'Domain Expired';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 7) {
+        expectedStatus = 'Critical Sent';
+        alertLevel = 'Domain Critical Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 15) {
+        expectedStatus = 'Urgent Sent';
+        alertLevel = 'Domain Urgent Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 30) {
+        expectedStatus = 'Warning Sent';
+        alertLevel = 'Domain Priority Warning';
+        shouldSend = true;
+      } else if (daysRemaining !== null && daysRemaining <= 60) {
+        expectedStatus = 'Sent';
+        alertLevel = 'Domain Warning';
+        shouldSend = true;
+      }
+      
+      const currentDomainEmailStatus = site.domainEmailStatus || 'No Alert';
+      
+      if (currentDomainEmailStatus !== expectedStatus) {
+        console.log(`[Alert System] Domain alert status changed from "${currentDomainEmailStatus}" to "${expectedStatus}" for ${site.name}.`);
+        
+        if (shouldSend) {
+          try {
+            const websiteStatus = siteSuccess ? 'Online' : 'Offline';
+            const domainStatus = domainWarning ? 'Warning' : 'Secure';
+            let domainName = site.name;
+            try {
+              domainName = site.url ? new URL(site.url).hostname.replace('www.', '') : site.name;
+            } catch (urlErr) {
+              console.log(`Failed to parse URL for domain name, using fallback: ${site.url}`);
+            }
+            
+            let malwareStatus = 'Clean';
+            if (
+              malwareRes.safeBrowsingStatus !== 'Safe' || 
+              malwareRes.malwareStatus !== 'Clean' || 
+              malwareRes.phishingStatus !== 'Clean' || 
+              malwareRes.blacklistStatus !== 'Clean'
+            ) {
+              malwareStatus = 'Threat Detected';
+            }
+            
+            const lastScanTime = new Date().toLocaleString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            });
+            
+            const expiryDateStr = domainRes.expiryDate ? new Date(domainRes.expiryDate).toLocaleDateString('en-GB', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            }) : 'N/A';
+            
+            await sendDomainExpiryAlert({
+              alertEmail: site.alertEmail,
+              websiteName: site.name,
+              websiteUrl: site.url,
+              domainName: domainName,
+              domainStatus: domainStatus,
+              expiryDate: expiryDateStr,
+              daysRemaining: daysRemaining !== null ? daysRemaining : 'Unknown',
+              alertLevel: alertLevel,
+              websiteStatus,
+              sslStatus: sslRes.status,
+              malwareStatus,
+              lastScanTime
+            });
+            
+            console.log(`[Alert System] Domain expiry alert email sent successfully to ${site.alertEmail}.`);
+          } catch (mailErr: any) {
+            console.error(`[Alert System] Failed to send Domain expiry email alert for ${site.name}:`, mailErr.message);
+          }
+        }
+        
+        try {
+          await prisma.website.update({
+            where: { id: BigInt(site.id) },
+            data: {
+              domainEmailStatus: expectedStatus,
+              lastDomainAlertSentAt: shouldSend ? new Date() : null
+            }
+          });
+          console.log(`[Alert System] Website ${site.name} domain email status updated to "${expectedStatus}"`);
+        } catch (dbErr: any) {
+          console.error(`[Alert System] Failed to update website domain alert status in database:`, dbErr.message);
+        }
+      } else {
+        console.log(`[Alert System] Domain alert status unchanged ("${currentDomainEmailStatus}"). No email sent.`);
+      }
     }
 
     reportDetails[index] = {

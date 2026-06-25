@@ -12,7 +12,7 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
   const [search, setSearch] = useState("");
   const [showModal, setShow] = useState(false);
   const [editSite, setEdit] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", url: "" });
+  const [form, setForm] = useState({ name: "", url: "", alertEmail: "" });
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
 
@@ -20,8 +20,8 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
     s.name.toLowerCase().includes(search.toLowerCase()) || s.url.toLowerCase().includes(search.toLowerCase())
   );
 
-  function openAdd() { setEdit(null); setForm({ name: "", url: "" }); setShow(true); }
-  function openEdit(s: any) { setEdit(s); setForm({ name: s.name, url: s.url }); setShow(true); }
+  function openAdd() { setEdit(null); setForm({ name: "", url: "", alertEmail: "" }); setShow(true); }
+  function openEdit(s: any) { setEdit(s); setForm({ name: s.name, url: s.url, alertEmail: s.alertEmail || "" }); setShow(true); }
 
   async function save() {
     if (!form.name || !form.url) return;
@@ -68,13 +68,13 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
   }
 
   return (
-    <div style={{ padding: "28px 32px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 22 }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ width: "100%" }}>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Websites</h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>{sites.length} websites configured</p>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
           <button 
             onClick={() => setShowDeleteAllConfirm(true)} 
             disabled={sites.length === 0}
@@ -134,10 +134,10 @@ export function WebsiteManagement({ sites, refreshSites, triggerCapture, openScr
         <div style={{ position: "fixed", inset: 0, background: "#000000bb", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
           <div style={{ ...S.card, padding: 28 }} className="w-full max-w-[420px] mx-4 animate-fade-in">
             <h2 style={{ fontSize: 16, fontWeight: 700, color: "#f1f5f9", marginBottom: 20 }}>{editSite ? "Edit Website" : "Add Website"}</h2>
-            {[["Site Name", "name", "e.g. CRM Portal"], ["URL", "url", "https://example.com"]].map(([label, key, ph]) => (
+            {[["Site Name", "name", "e.g. London Car Rentals"], ["URL", "url", "https://lcr.co.uk"], ["Alert Email", "alertEmail", "owner@company.com"]].map(([label, key, ph]) => (
               <div key={key} style={{ marginBottom: 14 }}>
                 <label style={{ fontSize: 12, color: "#64748b", display: "block", marginBottom: 5 }}>{label}</label>
-                <input value={form[key as 'name' | 'url']} onChange={e => setForm({ ...form, [key]: e.target.value })} style={S.input} placeholder={ph} />
+                <input value={form[key as 'name' | 'url' | 'alertEmail']} onChange={e => setForm({ ...form, [key]: e.target.value })} style={S.input} placeholder={ph} />
               </div>
             ))}
             <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 22 }}>

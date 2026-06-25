@@ -69,3 +69,50 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+
+/* Custom responsive layout overrides to guarantee proper gaps and alignment */
+@media (min-width: 1024px) {
+  .desktop-layout {
+    padding: 16px !important;
+    padding-top: 32px !important;
+    gap: 16px !important;
+  }
+  .desktop-main {
+    border-radius: 12px !important;
+    background-color: rgba(19, 21, 31, 0.4) !important;
+  }
+}
+
+/* Page containers padding overrides */
+.page-container {
+  padding: 16px !important;
+}
+@media (min-width: 640px) {
+  .page-container {
+    padding: 24px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .page-container {
+    padding: 32px !important;
+  }
+}
+
+/* Metrics page custom padding */
+.metrics-container {
+  padding: 24px 24px 24px 24px !important;
+  padding-top: 40px !important;
+}
+@media (min-width: 640px) {
+  .metrics-container {
+    padding: 32px 32px 32px 32px !important;
+    padding-top: 48px !important;
+  }
+}
+@media (min-width: 1024px) {
+  .metrics-container {
+    padding: 40px 40px 40px 40px !important;
+    padding-top: 64px !important;
+  }
+}
+

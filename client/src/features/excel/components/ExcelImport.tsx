@@ -307,7 +307,7 @@ export function ExcelImport({ refreshSites }: ExcelImportProps) {
   const displayedLogs = logs.slice(-6);
 
   return (
-    <div style={{ padding: "28px 32px", maxWidth: 1100 }}>
+    <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ maxWidth: 1100, width: "100%" }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Excel Bulk Import</h1>
         <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
@@ -329,7 +329,7 @@ export function ExcelImport({ refreshSites }: ExcelImportProps) {
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: results.length > 0 ? "1fr" : "1fr 360px", gap: 20, alignItems: "start" }}>
+      <div className={`grid grid-cols-1 ${results.length > 0 ? "" : "lg:grid-cols-[1fr_360px]"} gap-5 items-start`}>
         
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           
@@ -475,7 +475,7 @@ export function ExcelImport({ refreshSites }: ExcelImportProps) {
                 </div>
               </div>
 
-              <div style={{ ...S.card, overflow: "hidden" }}>
+              <div style={{ ...S.card, overflow: "hidden" }} className="w-full overflow-x-auto">
                 <table>
                   <thead>
                     <tr style={{ background: "#0f1117", borderBottom: "1px solid #1e2130" }}>

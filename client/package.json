@@ -7,7 +7,10 @@
     "dev": "next dev",
     "build": "next build",
     "postinstall": "prisma generate",
-    "start": "next start"
+    "start": "next start",
+    "db:push": "prisma db push",
+    "prisma:generate": "prisma generate",
+    "query-db": "node C:\\Users\\91932\\.gemini\\antigravity-ide\\brain\\f8e931a6-0903-4a54-bf6f-f7065b2ac3e7\\scratch\\query_db.js"
   },
   "dependencies": {
     "@prisma/adapter-mariadb": "^7.8.0",

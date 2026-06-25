@@ -148,7 +148,7 @@ export default function App() {
   const isAllowed = hasAccess(page);
 
   return (
-    <div style={{ display: "flex", height: "100vh", background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter','Segoe UI',sans-serif", overflow: "hidden", position: "relative" }}>
+    <div className="lg:p-4 lg:pt-8 lg:gap-4 desktop-layout" style={{ display: "flex", height: "100vh", background: "#0f1117", color: "#e2e8f0", fontFamily: "'Inter','Segoe UI',sans-serif", overflow: "hidden", position: "relative" }}>
       
       {/* Mobile Drawer Backdrop Overlay */}
       {isSidebarOpen && (
@@ -167,7 +167,7 @@ export default function App() {
         onClose={() => setIsSidebarOpen(false)} 
       />
 
-      <main style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
+      <main className="lg:rounded-xl lg:bg-[#13151f]/40 desktop-main" style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "column" }}>
         {/* Mobile Sticky Top Header */}
         <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-[#13151f] border-b border-[#1e2130] sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-3">

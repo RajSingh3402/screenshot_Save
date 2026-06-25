@@ -40,7 +40,7 @@ export function Sidebar({ page, setPage, user, onLogout, isOpen, onClose }: Side
 
   return (
     <aside 
-      className={`w-[220px] bg-[#13151f] border-r border-[#1e2130] flex flex-col shrink-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:transition-transform max-lg:duration-300 max-lg:ease-in-out ${
+      className={`w-[220px] bg-[#13151f] border-r lg:border-none border-[#1e2130] lg:rounded-xl flex flex-col shrink-0 max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:transition-transform max-lg:duration-300 max-lg:ease-in-out ${
         isOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full'
       }`}
     >
@@ -73,7 +73,7 @@ export function Sidebar({ page, setPage, user, onLogout, isOpen, onClose }: Side
               background: active ? "#1e2a4a" : "transparent",
               color: active ? "#818cf8" : "#94a3b8",
               fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer",
-              marginBottom: 2, borderLeft: active ? "2px solid #6366f1" : "2px solid transparent",
+              marginBottom: 8, borderLeft: active ? "2px solid #6366f1" : "2px solid transparent",
               fontFamily: "inherit", textAlign: "left"
             }}>
               <span style={{ fontSize: 15 }}>{n.icon}</span>{n.label}

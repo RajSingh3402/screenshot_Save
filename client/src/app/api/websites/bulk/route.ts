@@ -34,6 +34,11 @@ export async function POST(request: NextRequest) {
         lastCapture: '-',
         error: null,
         lastCaptureImage: null,
+        alertEmail: site.alertEmail || null,
+        emailStatus: site.emailStatus || 'No Alert',
+        lastAlertSentAt: site.lastAlertSentAt ? new Date(site.lastAlertSentAt) : null,
+        domainEmailStatus: site.domainEmailStatus || 'No Alert',
+        lastDomainAlertSentAt: site.lastDomainAlertSentAt ? new Date(site.lastDomainAlertSentAt) : null,
       };
     });
 

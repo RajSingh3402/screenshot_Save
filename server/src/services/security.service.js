@@ -45,7 +45,7 @@ export async function checkSSL(urlString) {
           status: authorized ? 'Valid' : 'Invalid/Self-Signed',
           expiryDate: expiryDate,
           daysRemaining: daysRemaining,
-          warning: daysRemaining < 30 || !authorized
+          warning: (daysRemaining !== null && daysRemaining <= 60) || !authorized
         });
       });
       
@@ -215,7 +215,7 @@ export async function checkDomainExpiry(urlString) {
     return {
       expiryDate: expiryDate,
       daysRemaining: daysRemaining,
-      warning: daysRemaining < 30
+      warning: daysRemaining !== null && daysRemaining <= 60
     };
 
   } catch (err) {
