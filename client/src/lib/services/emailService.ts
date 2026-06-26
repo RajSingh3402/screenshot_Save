@@ -105,9 +105,10 @@ export function logMockEmail(mailOptions: any): void {
     ? `Attachment Saved: ${mailOptions.attachments[0].filename}`
     : 'No Attachments';
   const bodyContent = mailOptions.text || mailOptions.html || '';
+  const ccStr = mailOptions.cc ? `\nCC: ${mailOptions.cc}` : '';
   const logContent = `
 === MOCK EMAIL NOTIFICATION ===
-To: ${mailOptions.to}
+To: ${mailOptions.to}${ccStr}
 From: ${mailOptions.from}
 Subject: ${mailOptions.subject}
 Body:
@@ -164,31 +165,34 @@ export async function sendSslExpiryAlert(options: SslExpiryAlertOptions): Promis
         port: dbConfig.port,
         user: dbConfig.username,
         pass: dbConfig.password,
+        globalCcEmail: dbConfig.globalCcEmail,
       };
     } else {
-      const smtpRow = await prisma.smtpSetting.findUnique({ where: { id: 1 } });
-      if (smtpRow) {
-        smtp = {
-          host: smtpRow.host || '',
-          port: smtpRow.port || '',
-          user: smtpRow.user || '',
-          pass: smtpRow.pass || '',
-        };
-      }
+      smtp = {
+        host: '',
+        port: '',
+        user: '',
+        pass: '',
+        globalCcEmail: '',
+      };
     }
   } catch (err: any) {
     console.log('Could not load SMTP config from database for SSL alert:', err.message);
   }
 
-  const alertBadgeClass = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent') ? 'badge-critical' : 'badge-warning';
-  const alertBannerClass = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent') ? '' : 'warning';
+  const isUrgent = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent');
+  const themeColor = isUrgent ? '#ef4444' : '#f59e0b';
+  const gradientBar = 'linear-gradient(to right, #f59e0b, #ec4899, #8b5cf6, #3b82f6, #10b981)';
+  const bannerBg = isUrgent ? '#fef2f2' : '#fffbeb';
+  const bannerBorder = isUrgent ? '4px solid #ef4444' : '4px solid #f59e0b';
   
-  const sslStatusBadgeClass = sslStatus === 'Valid' ? 'badge-info' : 'badge-critical';
-  const websiteStatusColor = websiteStatus === 'Online' ? '#4ade80' : '#f87171';
-  const sslStatusColor = sslStatus === 'Valid' ? '#4ade80' : '#f87171';
-  const domainStatusColor = domainStatus === 'Secure' ? '#4ade80' : '#fbbf24';
-  const malwareStatusColor = malwareStatus === 'Clean' ? '#4ade80' : '#f87171';
-  const daysRemainingColor = (typeof daysRemaining === 'number' && daysRemaining <= 7) ? '#f87171' : (typeof daysRemaining === 'number' && daysRemaining <= 30) ? '#fbbf24' : '#818cf8';
+  const alertIcon = isUrgent
+    ? '<span style="font-size: 32px; vertical-align: middle;">🚨</span>'
+    : '<span style="font-size: 32px; vertical-align: middle;">⚠️</span>';
+
+  const alertBadgeClass = isUrgent ? 'badge-danger' : 'badge-warning';
+  const sslStatusBadgeClass = sslStatus === 'Valid' ? 'badge-success' : 'badge-danger';
+  const daysRemainingColor = (typeof daysRemaining === 'number' && daysRemaining <= 7) ? '#ef4444' : (typeof daysRemaining === 'number' && daysRemaining <= 30) ? '#f59e0b' : '#3b82f6';
 
   const htmlBody = `
 <!DOCTYPE html>
@@ -197,99 +201,174 @@ export async function sendSslExpiryAlert(options: SslExpiryAlertOptions): Promis
   <meta charset="UTF-8">
   <title>SSL Certificate Expiry Alert</title>
   <style>
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #f1f5f9; padding: 30px; margin: 0; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-    .header { background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%); padding: 24px; text-align: center; border-bottom: 1px solid #1f2937; }
-    .header h1 { margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
-    .header p { margin: 4px 0 0 0; color: #c7d2fe; font-size: 13px; }
-    .content { padding: 32px 24px; }
-    .alert-banner { background-color: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 4px; margin-bottom: 24px; }
-    .alert-banner.warning { background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; }
-    .alert-title { font-weight: 700; color: #f1f5f9; font-size: 15px; margin-bottom: 6px; }
-    .alert-desc { font-size: 13px; color: #94a3b8; line-height: 1.5; }
-    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-    .details-table td { padding: 12px 0; border-bottom: 1px solid #1f2937; font-size: 14px; }
-    .details-table td.label { color: #94a3b8; width: 40%; font-weight: 500; }
-    .details-table td.value { color: #f1f5f9; font-weight: 600; text-align: right; }
-    .action-box { background-color: #1e1b4b; border: 1px dashed #4f46e5; border-radius: 6px; padding: 18px; margin-bottom: 28px; text-align: center; }
-    .action-title { font-size: 13px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
-    .action-desc { font-size: 14px; color: #e0e7ff; margin: 0; font-weight: 500; }
-    .summary-section { background-color: #0f172a; border-radius: 6px; padding: 20px; border: 1px solid #1e293b; }
-    .summary-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
-    .footer { text-align: center; padding: 24px; font-size: 11px; color: #4b5563; background-color: #0b0f19; border-top: 1px solid #1f2937; }
-    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-    .badge-critical { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .badge-warning { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-info { background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #334155; padding: 20px; margin: 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .header { background-color: #0b1d33; padding: 20px; text-align: left; }
+    .header-table { width: 100%; border-collapse: collapse; }
+    .logo-container { vertical-align: middle; }
+    .logo-text { display: inline-block; vertical-align: middle; }
+    .logo-title { color: #ffffff; font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.5px; line-height: 1.2; }
+    .logo-subtitle { color: #94a3b8; font-size: 8px; font-weight: 700; margin: 0; letter-spacing: 1px; text-transform: uppercase; }
+    .header-right { text-align: right; color: #ffffff; font-size: 11px; vertical-align: middle; }
+    .header-right-text { display: inline-block; vertical-align: middle; text-align: left; margin-left: 8px; }
+    .header-right-title { font-weight: 700; color: #ffffff; margin: 0; }
+    .header-right-subtitle { color: #94a3b8; margin: 0; }
+    .gradient-bar { height: 4px; background: ${gradientBar}; }
+    .content { padding: 30px 24px; }
+    .alert-banner { background-color: ${bannerBg}; border-left: ${bannerBorder}; padding: 18px; border-radius: 6px; margin-bottom: 24px; display: table; width: 100%; box-sizing: border-box; }
+    .alert-icon-cell { display: table-cell; vertical-align: middle; width: 50px; }
+    .alert-text-cell { display: table-cell; vertical-align: middle; }
+    .alert-title { font-weight: 700; color: #0f172a; font-size: 16px; margin-bottom: 4px; }
+    .alert-desc { font-size: 13px; color: #475569; line-height: 1.5; margin: 0; }
+    .section-title-container { border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; margin-top: 8px; }
+    .section-icon { display: inline-block; width: 28px; height: 28px; background-color: #0b1d33; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; font-size: 13px; vertical-align: middle; margin-right: 8px; }
+    .section-text { font-size: 15px; font-weight: 700; color: #0f172a; display: inline-block; vertical-align: middle; }
+    .details-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    .details-table td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #334155; vertical-align: middle; }
+    .details-table tr:last-child td { border-bottom: none; }
+    .details-table td.label { font-weight: 500; color: #64748b; }
+    .details-table td.value { font-weight: 600; text-align: right; color: #0f172a; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+    .badge-success { background-color: #e6f4ea; color: #137333; border: 1px solid rgba(19, 115, 51, 0.2); }
+    .badge-danger { background-color: #fce8e6; color: #c5221f; border: 1px solid rgba(197, 34, 31, 0.2); }
+    .badge-warning { background-color: #fff0d4; color: #b06000; border: 1px solid #ffe0b2; }
+    .badge-info { background-color: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
+    .assistance-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 10px; }
+    .assistance-table { width: 100%; border-collapse: collapse; }
+    .assistance-left { width: 65%; padding-right: 20px; border-right: 1px solid #e2e8f0; vertical-align: top; }
+    .assistance-right { width: 35%; padding-left: 20px; vertical-align: middle; }
+    .assistance-icon { display: inline-block; width: 40px; height: 40px; background-color: #0b1d33; border-radius: 50%; text-align: center; line-height: 40px; color: #ffffff; font-size: 18px; float: left; margin-right: 12px; }
+    .assistance-text-container { overflow: hidden; }
+    .assistance-title { font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
+    .assistance-desc { font-size: 12px; color: #64748b; margin: 0; line-height: 1.4; }
+    .contact-item { font-size: 12px; color: #475569; margin-bottom: 8px; }
+    .contact-item:last-child { margin-bottom: 0; }
+    .footer { background-color: #0b1d33; padding: 24px; text-align: center; color: #ffffff; font-size: 11px; }
+    .footer-divider { border: 0; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 15px 0; position: relative; }
+    .footer-divider-icon { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; background-color: #0b1d33; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 18px; color: #94a3b8; font-size: 10px; }
+    .footer-slogan { color: #e2e8f0; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .footer-copyright { color: #94a3b8; font-size: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>SiteWatch Monitor Portal</h1>
-      <p>SSL Certificate Expiry Alert</p>
+      <table class="header-table">
+        <tr>
+          <td class="logo-container">
+            <img src="https://www.visualytes.com/wp-content/uploads/2020/08/cropped-v-favicon-270x270.png" width="38" height="38" alt="Visualytes Logo" style="vertical-align: middle; margin-right: 10px; display: inline-block; border-radius: 50%;">
+            <div class="logo-text">
+              <h1 class="logo-title">VISUALYTES</h1>
+              <p class="logo-subtitle">WEB & MARKETING SOLUTIONS</p>
+            </div>
+          </td>
+          <td class="header-right">
+            <span style="font-size: 18px; vertical-align: middle; margin-right: 6px; color: #10b981; display: inline-block;">🛡️</span>
+            <div class="header-right-text">
+              <p class="header-right-title">Secure Today.</p>
+              <p class="header-right-subtitle">Trusted Always.</p>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
+    <div class="gradient-bar"></div>
     <div class="content">
-      <div class="alert-banner ${alertBannerClass}">
-        <div class="alert-title">SSL Certificate Expiration Warning</div>
-        <div class="alert-desc">The SSL certificate for <strong>${websiteName}</strong> requires immediate attention. See details below.</div>
+      <div class="alert-banner">
+        <div class="alert-icon-cell">
+          ${alertIcon}
+        </div>
+        <div class="alert-text-cell">
+          <div class="alert-title">SSL Certificate Expiration Warning</div>
+          <div class="alert-desc">The SSL certificate for the website listed below is approaching expiration. Please take the necessary steps to renew it before the expiration date to avoid any service disruption or security risks.</div>
+        </div>
       </div>
       
+      <div class="section-title-container">
+        <div class="section-icon">📄</div>
+        <div class="section-text">SSL Certificate Details</div>
+      </div>
+
       <table class="details-table">
         <tr>
-          <td class="label">Website Name</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🌐</span>
+            Website Name
+          </td>
           <td class="value">${websiteName}</td>
         </tr>
         <tr>
-          <td class="label">Website URL</td>
-          <td class="value"><a href="${websiteUrl}" style="color: #818cf8; text-decoration: none;">${websiteUrl}</a></td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🔗</span>
+            Website URL
+          </td>
+          <td class="value"><a href="${websiteUrl}" style="color: #1a73e8; text-decoration: none;">${websiteUrl}</a></td>
         </tr>
         <tr>
-          <td class="label">SSL Status</td>
-          <td class="value"><span class="badge ${sslStatusBadgeClass}">${sslStatus}</span></td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🛡️</span>
+            SSL Status
+          </td>
+          <td class="value">
+            <span class="badge ${sslStatusBadgeClass}">
+              ${sslStatus === 'Valid' ? '✓ ' + sslStatus : sslStatus}
+            </span>
+          </td>
         </tr>
         <tr>
-          <td class="label">Expiry Date</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">📅</span>
+            Expiry Date
+          </td>
           <td class="value">${expiryDate}</td>
         </tr>
         <tr>
-          <td class="label">Days Remaining</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">⏳</span>
+            Days Remaining
+          </td>
           <td class="value" style="color: ${daysRemainingColor}; font-weight: bold;">${daysRemaining}</td>
         </tr>
         <tr>
-          <td class="label">Alert Level</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">⚠️</span>
+            Alert Level
+          </td>
           <td class="value"><span class="badge ${alertBadgeClass}">${alertLevel}</span></td>
         </tr>
       </table>
 
-      <div class="action-box">
-        <div class="action-title">Action Required</div>
-        <p class="action-desc">Please renew your SSL certificate before expiration.</p>
-      </div>
-
-      <div class="summary-section">
-        <div class="summary-title">Monitoring Summary</div>
-        <div style="font-size: 13px; color: #94a3b8; line-height: 1.8;">
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
-            <span>Website Status</span> <strong style="color: ${websiteStatusColor}">${websiteStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>SSL Status</span> <strong style="color: ${sslStatusColor}">${sslStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>Domain Status</span> <strong style="color: ${domainStatusColor}">${domainStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>Malware Status</span> <strong style="color: ${malwareStatusColor}">${malwareStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; padding-top: 6px;">
-            <span>Last Scan Time</span> <strong style="color: #f1f5f9">${lastScanTime}</strong>
-          </div>
-        </div>
+      <div class="assistance-box">
+        <table class="assistance-table">
+          <tr>
+            <td class="assistance-left">
+              <div class="assistance-icon">✉</div>
+              <div class="assistance-text-container">
+                <h4 class="assistance-title">Need Assistance?</h4>
+                <p class="assistance-desc">If you have any questions or need help renewing your SSL certificate, please reply to this email or contact our support team.</p>
+              </div>
+            </td>
+            <td class="assistance-right">
+              <div class="contact-item">
+                <span style="font-size: 14px; margin-right: 6px; vertical-align: middle;">✉</span>
+                <a href="mailto:support@visualytes.com" style="color: ${themeColor}; text-decoration: none; font-weight: 600;">support@visualytes.com</a>
+              </div>
+              <div class="contact-item" style="color: #64748b;">
+                <span style="font-size: 14px; margin-right: 6px; vertical-align: middle;">🕒</span>
+                We typically respond within 24 business hours.
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
     <div class="footer">
-      Generated By: SiteWatch Monitor Portal
+      <div class="footer-divider">
+        <div class="footer-divider-icon">🔒</div>
+      </div>
+      <p class="footer-slogan">Thank you for trusting Visualytes.</p>
+      <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 11px;">We're here to keep your website secure.</p>
+      <p class="footer-copyright">© 2026 Visualytes Web & Marketing Solutions. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -319,29 +398,21 @@ ${daysRemaining}
 Alert Level:
 ${alertLevel}
 
-Action Required:
-
-Please renew your SSL certificate before expiration.
-
-Monitoring Summary:
-
-Website Status: ${websiteStatus}
-SSL Status: ${sslStatus}
-Domain Status: ${domainStatus}
-Malware Status: ${malwareStatus}
-Last Scan Time: ${lastScanTime}
-
 Generated By:
 SiteWatch Monitor Portal
 `;
 
-  const mailOptions = {
+  const mailOptions: any = {
     from: smtp.user || 'noreply@company.com',
     to: alertEmail,
     subject: `SSL Certificate Expiry Alert - ${alertLevel} - ${websiteName}`,
     html: htmlBody,
     text: textBody.trim()
   };
+
+  if (smtp.globalCcEmail && smtp.globalCcEmail.trim() !== '') {
+    mailOptions.cc = smtp.globalCcEmail.trim();
+  }
 
   if (smtp.host && smtp.user) {
     console.log(`Attempting to send SSL expiry alert via SMTP to ${alertEmail}...`);
@@ -369,6 +440,7 @@ SiteWatch Monitor Portal
     logMockEmail(mailOptions);
   }
 }
+
 
 export interface DomainExpiryAlertOptions {
   alertEmail: string;
@@ -401,6 +473,7 @@ export async function sendDomainExpiryAlert(options: DomainExpiryAlertOptions): 
     lastScanTime
   } = options;
 
+
   if (!alertEmail) {
     console.log('No alert email specified for Domain Expiry Alert.');
     return;
@@ -417,31 +490,34 @@ export async function sendDomainExpiryAlert(options: DomainExpiryAlertOptions): 
         port: dbConfig.port,
         user: dbConfig.username,
         pass: dbConfig.password,
+        globalCcEmail: dbConfig.globalCcEmail,
       };
     } else {
-      const smtpRow = await prisma.smtpSetting.findUnique({ where: { id: 1 } });
-      if (smtpRow) {
-        smtp = {
-          host: smtpRow.host || '',
-          port: smtpRow.port || '',
-          user: smtpRow.user || '',
-          pass: smtpRow.pass || '',
-        };
-      }
+      smtp = {
+        host: '',
+        port: '',
+        user: '',
+        pass: '',
+        globalCcEmail: '',
+      };
     }
   } catch (err: any) {
     console.log('Could not load SMTP config from database for Domain alert:', err.message);
   }
 
-  const alertBadgeClass = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent') ? 'badge-critical' : 'badge-warning';
-  const alertBannerClass = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent') ? '' : 'warning';
+  const isUrgent = alertLevel.includes('Critical') || alertLevel.includes('Expired') || alertLevel.includes('Urgent');
+  const themeColor = isUrgent ? '#be123c' : '#e11d48';
+  const gradientBar = 'linear-gradient(to right, #f59e0b, #ec4899, #8b5cf6, #3b82f6, #10b981)';
+  const bannerBg = isUrgent ? '#fef2f2' : '#fff8f8';
+  const bannerBorder = isUrgent ? '4px solid #be123c' : '4px solid #e11d48';
   
-  const domainStatusBadgeClass = domainStatus === 'Secure' ? 'badge-info' : 'badge-critical';
-  const websiteStatusColor = websiteStatus === 'Online' ? '#4ade80' : '#f87171';
-  const sslStatusColor = sslStatus === 'Valid' ? '#4ade80' : '#f87171';
-  const domainStatusColor = domainStatus === 'Secure' ? '#4ade80' : '#fbbf24';
-  const malwareStatusColor = malwareStatus === 'Clean' ? '#4ade80' : '#f87171';
-  const daysRemainingColor = (typeof daysRemaining === 'number' && daysRemaining <= 7) ? '#f87171' : (typeof daysRemaining === 'number' && daysRemaining <= 30) ? '#fbbf24' : '#818cf8';
+  const alertIcon = isUrgent
+    ? '<span style="font-size: 32px; vertical-align: middle;">🚨</span>'
+    : '<span style="font-size: 32px; vertical-align: middle;">⚠️</span>';
+
+  const alertBadgeClass = isUrgent ? 'badge-danger' : 'badge-warning';
+  const domainStatusBadgeClass = domainStatus === 'Secure' ? 'badge-success' : 'badge-danger';
+  const daysRemainingColor = (typeof daysRemaining === 'number' && daysRemaining <= 7) ? '#ef4444' : (typeof daysRemaining === 'number' && daysRemaining <= 30) ? '#f59e0b' : '#3b82f6';
 
   const htmlBody = `
 <!DOCTYPE html>
@@ -450,103 +526,181 @@ export async function sendDomainExpiryAlert(options: DomainExpiryAlertOptions): 
   <meta charset="UTF-8">
   <title>Domain Expiration Warning</title>
   <style>
-    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #0b0f19; color: #f1f5f9; padding: 30px; margin: 0; }
-    .container { max-width: 600px; margin: 0 auto; background-color: #111827; border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-    .header { background: linear-gradient(135deg, #f59e0b 0%, #78350f 100%); padding: 24px; text-align: center; border-bottom: 1px solid #1f2937; }
-    .header h1 { margin: 0; color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
-    .header p { margin: 4px 0 0 0; color: #fde68a; font-size: 13px; }
-    .content { padding: 32px 24px; }
-    .alert-banner { background-color: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 16px; border-radius: 4px; margin-bottom: 24px; }
-    .alert-banner.warning { background-color: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; }
-    .alert-title { font-weight: 700; color: #f1f5f9; font-size: 15px; margin-bottom: 6px; }
-    .alert-desc { font-size: 13px; color: #94a3b8; line-height: 1.5; }
-    .details-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-    .details-table td { padding: 12px 0; border-bottom: 1px solid #1f2937; font-size: 14px; }
-    .details-table td.label { color: #94a3b8; width: 40%; font-weight: 500; }
-    .details-table td.value { color: #f1f5f9; font-weight: 600; text-align: right; }
-    .action-box { background-color: #1e1b4b; border: 1px dashed #4f46e5; border-radius: 6px; padding: 18px; margin-bottom: 28px; text-align: center; }
-    .action-title { font-size: 13px; font-weight: 700; color: #818cf8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
-    .action-desc { font-size: 14px; color: #e0e7ff; margin: 0; font-weight: 500; }
-    .summary-section { background-color: #0f172a; border-radius: 6px; padding: 20px; border: 1px solid #1e293b; }
-    .summary-title { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
-    .footer { text-align: center; padding: 24px; font-size: 11px; color: #4b5563; background-color: #0b0f19; border-top: 1px solid #1f2937; }
-    .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-    .badge-critical { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .badge-warning { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-info { background-color: rgba(99, 102, 241, 0.15); color: #818cf8; border: 1px solid rgba(99, 102, 241, 0.3); }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f8fafc; color: #334155; padding: 20px; margin: 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+    .header { background-color: #0b1d33; padding: 20px; text-align: left; }
+    .header-table { width: 100%; border-collapse: collapse; }
+    .logo-container { vertical-align: middle; }
+    .logo-text { display: inline-block; vertical-align: middle; }
+    .logo-title { color: #ffffff; font-size: 18px; font-weight: 700; margin: 0; letter-spacing: 0.5px; line-height: 1.2; }
+    .logo-subtitle { color: #94a3b8; font-size: 8px; font-weight: 700; margin: 0; letter-spacing: 1px; text-transform: uppercase; }
+    .header-right { text-align: right; color: #ffffff; font-size: 11px; vertical-align: middle; }
+    .header-right-text { display: inline-block; vertical-align: middle; text-align: left; margin-left: 8px; }
+    .header-right-title { font-weight: 700; color: #ffffff; margin: 0; }
+    .header-right-subtitle { color: #94a3b8; margin: 0; }
+    .gradient-bar { height: 4px; background: ${gradientBar}; }
+    .content { padding: 30px 24px; }
+    .alert-banner { background-color: ${bannerBg}; border-left: ${bannerBorder}; padding: 18px; border-radius: 6px; margin-bottom: 24px; display: table; width: 100%; box-sizing: border-box; }
+    .alert-icon-cell { display: table-cell; vertical-align: middle; width: 50px; }
+    .alert-text-cell { display: table-cell; vertical-align: middle; }
+    .alert-title { font-weight: 700; color: #0f172a; font-size: 16px; margin-bottom: 4px; }
+    .alert-desc { font-size: 13px; color: #475569; line-height: 1.5; margin: 0; }
+    .section-title-container { border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 16px; margin-top: 8px; }
+    .section-icon { display: inline-block; width: 28px; height: 28px; background-color: #0b1d33; border-radius: 50%; text-align: center; line-height: 28px; color: #ffffff; font-size: 13px; vertical-align: middle; margin-right: 8px; }
+    .section-text { font-size: 15px; font-weight: 700; color: #0f172a; display: inline-block; vertical-align: middle; }
+    .details-table { width: 100%; border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+    .details-table td { padding: 12px 16px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #334155; vertical-align: middle; }
+    .details-table tr:last-child td { border-bottom: none; }
+    .details-table td.label { font-weight: 500; color: #64748b; }
+    .details-table td.value { font-weight: 600; text-align: right; color: #0f172a; }
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+    .badge-success { background-color: #e6f4ea; color: #137333; border: 1px solid rgba(19, 115, 51, 0.2); }
+    .badge-danger { background-color: #fce8e6; color: #c5221f; border: 1px solid rgba(197, 34, 31, 0.2); }
+    .badge-warning { background-color: #fff0d4; color: #b06000; border: 1px solid #ffe0b2; }
+    .badge-info { background-color: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
+    .assistance-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 10px; }
+    .assistance-table { width: 100%; border-collapse: collapse; }
+    .assistance-left { width: 65%; padding-right: 20px; border-right: 1px solid #e2e8f0; vertical-align: top; }
+    .assistance-right { width: 35%; padding-left: 20px; vertical-align: middle; }
+    .assistance-icon { display: inline-block; width: 40px; height: 40px; background-color: #0b1d33; border-radius: 50%; text-align: center; line-height: 40px; color: #ffffff; font-size: 18px; float: left; margin-right: 12px; }
+    .assistance-text-container { overflow: hidden; }
+    .assistance-title { font-size: 15px; font-weight: 700; color: #0f172a; margin: 0 0 4px 0; }
+    .assistance-desc { font-size: 12px; color: #64748b; margin: 0; line-height: 1.4; }
+    .contact-item { font-size: 12px; color: #475569; margin-bottom: 8px; }
+    .contact-item:last-child { margin-bottom: 0; }
+    .footer { background-color: #0b1d33; padding: 24px; text-align: center; color: #ffffff; font-size: 11px; }
+    .footer-divider { border: 0; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 15px 0; position: relative; }
+    .footer-divider-icon { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; background-color: #0b1d33; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.1); line-height: 18px; color: #94a3b8; font-size: 10px; }
+    .footer-slogan { color: #e2e8f0; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .footer-copyright { color: #94a3b8; font-size: 10px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>DOMAIN EXPIRATION WARNING</h1>
-      <p>SiteWatch Monitor Portal</p>
+      <table class="header-table">
+        <tr>
+          <td class="logo-container">
+            <img src="https://www.visualytes.com/wp-content/uploads/2020/08/cropped-v-favicon-270x270.png" width="38" height="38" alt="Visualytes Logo" style="vertical-align: middle; margin-right: 10px; display: inline-block; border-radius: 50%;">
+            <div class="logo-text">
+              <h1 class="logo-title">VISUALYTES</h1>
+              <p class="logo-subtitle">WEB & MARKETING SOLUTIONS</p>
+            </div>
+          </td>
+          <td class="header-right">
+            <span style="font-size: 18px; vertical-align: middle; margin-right: 6px; color: #10b981; display: inline-block;">🛡️</span>
+            <div class="header-right-text">
+              <p class="header-right-title">Secure Today.</p>
+              <p class="header-right-subtitle">Trusted Always.</p>
+            </div>
+          </td>
+        </tr>
+      </table>
     </div>
+    <div class="gradient-bar"></div>
     <div class="content">
-      <div class="alert-banner ${alertBannerClass}">
-        <div class="alert-title">Domain Expiry Warning</div>
-        <div class="alert-desc">Your domain registration is approaching expiration. Please renew your domain before the expiry date to avoid website downtime, email service interruption, and domain loss.</div>
+      <div class="alert-banner">
+        <div class="alert-icon-cell">
+          ${alertIcon}
+        </div>
+        <div class="alert-text-cell">
+          <div class="alert-title">Domain Expiration Warning</div>
+          <div class="alert-desc">Your domain registration is approaching expiration. Please renew your domain registration before the expiry date to keep your website and online services active.</div>
+        </div>
       </div>
       
+      <div class="section-title-container">
+        <div class="section-icon">📄</div>
+        <div class="section-text">Domain Registration Details</div>
+      </div>
+
       <table class="details-table">
         <tr>
-          <td class="label">Website Name</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🌐</span>
+            Website Name
+          </td>
           <td class="value">${websiteName}</td>
         </tr>
         <tr>
-          <td class="label">Website URL</td>
-          <td class="value"><a href="${websiteUrl}" style="color: #818cf8; text-decoration: none;">${websiteUrl}</a></td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🔗</span>
+            Website URL
+          </td>
+          <td class="value"><a href="${websiteUrl}" style="color: #1a73e8; text-decoration: none;">${websiteUrl}</a></td>
         </tr>
         <tr>
-          <td class="label">Domain Name</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🌐</span>
+            Domain Name
+          </td>
           <td class="value">${domainName}</td>
         </tr>
         <tr>
-          <td class="label">Domain Status</td>
-          <td class="value"><span class="badge ${domainStatusBadgeClass}">${domainStatus}</span></td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">🛡️</span>
+            Domain Status
+          </td>
+          <td class="value">
+            <span class="badge ${domainStatusBadgeClass}">
+              ${domainStatus === 'Secure' ? '✓ ' + domainStatus : domainStatus}
+            </span>
+          </td>
         </tr>
         <tr>
-          <td class="label">Expiry Date</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">📅</span>
+            Expiry Date
+          </td>
           <td class="value">${expiryDate}</td>
         </tr>
         <tr>
-          <td class="label">Days Remaining</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">⏳</span>
+            Days Remaining
+          </td>
           <td class="value" style="color: ${daysRemainingColor}; font-weight: bold;">${daysRemaining}</td>
         </tr>
         <tr>
-          <td class="label">Alert Level</td>
+          <td class="label">
+            <span style="font-size: 16px; margin-right: 8px; vertical-align: middle;">⚠️</span>
+            Alert Level
+          </td>
           <td class="value"><span class="badge ${alertBadgeClass}">${alertLevel}</span></td>
         </tr>
       </table>
 
-      <div class="action-box">
-        <div class="action-title">Need Assistance?</div>
-        <p class="action-desc">Contact support team.</p>
-      </div>
-
-      <div class="summary-section">
-        <div class="summary-title">Monitoring Summary</div>
-        <div style="font-size: 13px; color: #94a3b8; line-height: 1.8;">
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
-            <span>Website Status</span> <strong style="color: ${websiteStatusColor}">${websiteStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>SSL Status</span> <strong style="color: ${sslStatusColor}">${sslStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>Domain Status</span> <strong style="color: ${domainStatusColor}">${domainStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #1e293b; padding: 6px 0;">
-            <span>Malware Status</span> <strong style="color: ${malwareStatusColor}">${malwareStatus}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between; padding-top: 6px;">
-            <span>Last Scan Time</span> <strong style="color: #f1f5f9">${lastScanTime}</strong>
-          </div>
-        </div>
+      <div class="assistance-box">
+        <table class="assistance-table">
+          <tr>
+            <td class="assistance-left">
+              <div class="assistance-icon">✉</div>
+              <div class="assistance-text-container">
+                <h4 class="assistance-title">Need Assistance?</h4>
+                <p class="assistance-desc">If you have any questions or need help renewing your domain registration, please reply to this email or contact our support team.</p>
+              </div>
+            </td>
+            <td class="assistance-right">
+              <div class="contact-item">
+                <span style="font-size: 14px; margin-right: 6px; vertical-align: middle;">✉</span>
+                <a href="mailto:support@visualytes.com" style="color: ${themeColor}; text-decoration: none; font-weight: 600;">support@visualytes.com</a>
+              </div>
+              <div class="contact-item" style="color: #64748b;">
+                <span style="font-size: 14px; margin-right: 6px; vertical-align: middle;">🕒</span>
+                We typically respond within 24 business hours.
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
-    <div style="text-align: center; padding: 24px; font-size: 11px; color: #4b5563; background-color: #0b0f19; border-top: 1px solid #1f2937;">
-      SiteWatch Monitor Portal
+    <div class="footer">
+      <div class="footer-divider">
+        <div class="footer-divider-icon">🔒</div>
+      </div>
+      <p class="footer-slogan">Thank you for trusting Visualytes.</p>
+      <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 11px;">We're here to keep your website secure.</p>
+      <p class="footer-copyright">© 2026 Visualytes Web & Marketing Solutions. All rights reserved.</p>
     </div>
   </div>
 </body>
@@ -557,7 +711,7 @@ export async function sendDomainExpiryAlert(options: DomainExpiryAlertOptions): 
 DOMAIN EXPIRATION WARNING
 
 Your domain registration is approaching expiration.
-Please renew your domain before the expiry date to avoid website downtime, email service interruption, and domain loss.
+Please renew your domain registration before the expiry date to keep your website and online services active.
 
 Domain Details Section:
 
@@ -569,19 +723,20 @@ Expiry Date: ${expiryDate}
 Days Remaining: ${daysRemaining}
 Alert Level: ${alertLevel}
 
-Need Assistance?
-Contact support team.
-
 SiteWatch Monitor Portal
 `;
 
-  const mailOptions = {
+  const mailOptions: any = {
     from: smtp.user || 'noreply@company.com',
     to: alertEmail,
     subject: `Domain Registration Expiry Alert - ${alertLevel} - ${websiteName}`,
     html: htmlBody,
     text: textBody.trim(),
   };
+
+  if (smtp.globalCcEmail && smtp.globalCcEmail.trim() !== '') {
+    mailOptions.cc = smtp.globalCcEmail.trim();
+  }
 
   if (smtp.host && smtp.user) {
     console.log(`Attempting to send Domain expiry alert via SMTP to ${alertEmail}...`);
@@ -609,3 +764,4 @@ SiteWatch Monitor Portal
     logMockEmail(mailOptions);
   }
 }
+

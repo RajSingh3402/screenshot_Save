@@ -76,6 +76,20 @@ export async function getCaptureProgressState() {
 export async function runCaptureSession(triggerName = 'Manual Trigger') {
   console.log(`Starting capture session triggered by: ${triggerName}`);
   
+  if (triggerName === 'Manual Trigger') {
+    try {
+      await prisma.website.updateMany({
+        data: {
+          emailStatus: 'No Alert',
+          domainEmailStatus: 'No Alert'
+        }
+      });
+      console.log('[Alert System] Reset email and domain alert status for all websites for manual capture.');
+    } catch (resetErr) {
+      console.error('Failed to reset alert statuses:', resetErr.message);
+    }
+  }
+  
   let websites = [];
   try {
     websites = await getWebsites();
@@ -479,6 +493,7 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
       }
     }
 
+
     // Domain Expiry Email Alert Logic
     if (site.alertEmail) {
       console.log(`[Alert System] Checking Domain expiry alert for ${site.name} (Alert Email: ${site.alertEmail})...`);
@@ -491,23 +506,23 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
       let shouldSend = false;
       
       if (daysRemaining !== null && daysRemaining <= 0) {
-        expectedStatus = 'Expired Alert Sent';
+        expectedStatus = '🚨 Expired Alert Sent';
         alertLevel = 'Domain Expired';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 7) {
-        expectedStatus = 'Critical Sent';
+        expectedStatus = '🚨 Critical Sent';
         alertLevel = 'Domain Critical Warning';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 15) {
-        expectedStatus = 'Urgent Sent';
+        expectedStatus = '🚨 Urgent Sent';
         alertLevel = 'Domain Urgent Warning';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 30) {
-        expectedStatus = 'Warning Sent';
+        expectedStatus = '⚠ Warning Sent';
         alertLevel = 'Domain Priority Warning';
         shouldSend = true;
-      } else if (daysRemaining !== null && daysRemaining <= 60) {
-        expectedStatus = 'Sent';
+      } else if (daysRemaining !== null && daysRemaining <= 160) {
+        expectedStatus = '📧 Sent';
         alertLevel = 'Domain Warning';
         shouldSend = true;
       }
@@ -1019,7 +1034,6 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
   } catch (dbErr) {
     console.error('Failed to create report entry in database:', dbErr);
   }
-
   captureProgress.status = 'Sending email alerts...';
   console.log('Sending emails...');
 

@@ -73,7 +73,21 @@ export const getCaptureProgressState = async (): Promise<ProgressState> => {
 export async function runCaptureSession(triggerName = 'Manual Trigger'): Promise<void> {
   console.log(`Starting capture session triggered by: ${triggerName}`);
 
-  let websites = [];
+  if (triggerName === 'Manual Trigger') {
+    try {
+      await prisma.website.updateMany({
+        data: {
+          emailStatus: 'No Alert',
+          domainEmailStatus: 'No Alert'
+        }
+      });
+      console.log('[Alert System] Reset email and domain alert status for all websites for manual capture.');
+    } catch (resetErr: any) {
+      console.error('Failed to reset alert statuses:', resetErr.message);
+    }
+  }
+
+  let websites: any[] = [];
   try {
     websites = await prisma.website.findMany({
       orderBy: { id: 'desc' },
@@ -547,23 +561,23 @@ export async function runCaptureSession(triggerName = 'Manual Trigger'): Promise
       let shouldSend = false;
       
       if (daysRemaining !== null && daysRemaining <= 0) {
-        expectedStatus = 'Expired Alert Sent';
+        expectedStatus = '🚨 Expired Alert Sent';
         alertLevel = 'Domain Expired';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 7) {
-        expectedStatus = 'Critical Sent';
+        expectedStatus = '🚨 Critical Sent';
         alertLevel = 'Domain Critical Warning';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 15) {
-        expectedStatus = 'Urgent Sent';
+        expectedStatus = '🚨 Urgent Sent';
         alertLevel = 'Domain Urgent Warning';
         shouldSend = true;
       } else if (daysRemaining !== null && daysRemaining <= 30) {
-        expectedStatus = 'Warning Sent';
+        expectedStatus = '⚠ Warning Sent';
         alertLevel = 'Domain Priority Warning';
         shouldSend = true;
-      } else if (daysRemaining !== null && daysRemaining <= 60) {
-        expectedStatus = 'Sent';
+      } else if (daysRemaining !== null && daysRemaining <= 160) {
+        expectedStatus = '📧 Sent';
         alertLevel = 'Domain Warning';
         shouldSend = true;
       }
@@ -771,9 +785,16 @@ export async function runCaptureSession(triggerName = 'Manual Trigger'): Promise
     const [schedules, recipients, smtpRow] = await Promise.all([
       prisma.schedule.findMany(),
       prisma.emailRecipient.findMany(),
-      prisma.smtpSetting.findUnique({ where: { id: 1 } }),
+      prisma.smtpConfig.findFirst({ orderBy: { id: 'desc' } }),
     ]);
-    const smtp = smtpRow || { host: '', port: '', user: '', pass: '' };
+    const smtp = smtpRow
+      ? {
+          host: smtpRow.host || '',
+          port: smtpRow.port !== undefined && smtpRow.port !== null ? String(smtpRow.port) : '',
+          user: smtpRow.username || '',
+          pass: smtpRow.password || '',
+        }
+      : { host: '', port: '', user: '', pass: '' };
     settings = {
       schedules: schedules.map((s) => ({
         id: Number(s.id),
