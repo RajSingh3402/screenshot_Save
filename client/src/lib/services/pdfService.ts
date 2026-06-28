@@ -251,6 +251,7 @@ export async function generatePdfReport({
         .screenshot-img-full {
           display: inline-block;
           max-width: 100%;
+          max-height: 200mm;
           height: auto;
           border: 1px solid #e5e7eb;
           border-radius: 4px;
@@ -549,7 +550,7 @@ export async function generatePdfReport({
           <div class="screenshot-section">
             <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
             <div class="screenshot-img-container-full">
-              <img class="screenshot-img-full" src="${dataUrl}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
+              <img class="screenshot-img-full" src="${dataUrl}" style="max-width: ${targetWidth}px; max-height: 200mm; width: auto; height: auto;" />
             </div>
           </div>
         `;
