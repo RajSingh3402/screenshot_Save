@@ -23,13 +23,198 @@ function getPngDimensions(filePath) {
   }
 }
 
+// Helper function to read JPEG dimensions from physical file metadata
+function getJpgDimensions(filePath) {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(65536);
+    const bytesRead = fs.readSync(fd, buffer, 0, 65536, 0);
+    if (bytesRead < 4 || buffer[0] !== 0xFF || buffer[1] !== 0xD8) {
+      throw new Error('Not a valid JPEG file');
+    }
+    let i = 2;
+    while (i < bytesRead - 8) {
+      if (buffer[i] !== 0xFF) {
+        i++;
+        continue;
+      }
+      const marker = buffer[i + 1];
+      if (marker === 0xFF) {
+        i++;
+        continue;
+      }
+      if (marker === 0xD9 || marker === 0xDA) {
+        break;
+      }
+      if (marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+        i += 2;
+        continue;
+      }
+      const length = buffer.readUInt16BE(i + 2);
+      if ((marker >= 0xC0 && marker <= 0xCF) && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+        const height = buffer.readUInt16BE(i + 5);
+        const width = buffer.readUInt16BE(i + 7);
+        return { width, height };
+      }
+      i += 2 + length;
+    }
+    throw new Error('SOF marker not found');
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+const globalForBrowser = global;
+
+async function getBrowserInstance() {
+  console.log('[Puppeteer] Checking cached server browser health...');
+  if (globalForBrowser.cachedBrowser) {
+    if (globalForBrowser.cachedBrowser.connected) {
+      console.log('[Puppeteer] Cached server browser is connected and healthy.');
+      return globalForBrowser.cachedBrowser;
+    } else {
+      console.log('[Puppeteer] Cached server browser is disconnected or dead, restarting...');
+      globalForBrowser.cachedBrowser = undefined;
+    }
+  }
+
+  console.log('[Puppeteer] Launching new optimized server browser instance...');
+  const startTimeLaunch = Date.now();
+  globalForBrowser.cachedBrowser = await puppeteer.launch({
+    headless: true,
+    ignoreHTTPSErrors: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--allow-file-access-from-files',
+      '--disable-gpu',
+      '--disable-dev-shm-usage',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-extensions',
+      '--disable-notifications',
+      '--disable-background-networking',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-breakpad',
+      '--disable-component-extensions-with-background-pages',
+      '--disable-features=Translate',
+      '--disable-ipc-flooding-protection',
+      '--disable-renderer-backgrounding',
+      '--force-color-profile=srgb',
+      '--metrics-recording-only',
+      '--mute-audio',
+      '--disable-web-security',
+      '--js-flags="--max-old-space-size=512"',
+    ]
+  });
+  console.log(`[Puppeteer] Server browser launched in ${Date.now() - startTimeLaunch}ms`);
+
+  globalForBrowser.cachedBrowser.on('disconnected', () => {
+    console.log('[Puppeteer] Server browser disconnected event received.');
+    globalForBrowser.cachedBrowser = undefined;
+  });
+
+  return globalForBrowser.cachedBrowser;
+}
+
+// Helper function to wait for all image tags in the page to complete loading
+async function verifyImagesLoaded(page) {
+  try {
+    await Promise.race([
+      page.evaluate(async () => {
+        const imgs = Array.from(document.querySelectorAll('img'));
+        await Promise.all(
+          imgs.map((img) => {
+            if (img.complete) return Promise.resolve();
+            return new Promise((resolve) => {
+              img.addEventListener('load', () => resolve(), { once: true });
+              img.addEventListener('error', () => resolve(), { once: true });
+              setTimeout(() => resolve(), 2500); // 2.5s individual image load timeout
+            });
+          })
+        );
+      }),
+      new Promise((resolve) => setTimeout(resolve, 3000)) // 3s max wait for all images
+    ]);
+  } catch (err) {
+    console.log('Warning waiting for images to load:', err.message);
+  }
+}
+
+// Helper function to prepare the page layout for continuous full-page screenshot
+async function preparePageForScreenshot(page) {
+  try {
+    await page.evaluate(() => {
+      // Force convert fixed and sticky positioned elements to absolute
+      // so that they only appear once in their natural layout flow and do not repeat/overlap
+      const all = document.querySelectorAll('*');
+      all.forEach((el) => {
+        const style = window.getComputedStyle(el);
+        if (style.position === 'fixed' || style.position === 'sticky') {
+          el.style.setProperty('position', 'absolute', 'important');
+        }
+      });
+    });
+  } catch (err) {
+    console.log('Warning preparing page styles for screenshot:', err.message);
+  }
+}
+
+// Downscales screenshot buffer to max 800px width and compresses as JPEG at 65% quality
+async function compressImageBuffer(browser, buffer) {
+  let tempPage = null;
+  try {
+    tempPage = await browser.newPage();
+    await tempPage.goto('about:blank');
+
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64}`;
+
+    const compressedBase64 = await tempPage.evaluate(async (src) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Canvas context not available'));
+            return;
+          }
+          const maxWidth = 800;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.65));
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = src;
+      });
+    }, dataUrl);
+
+    return Buffer.from(compressedBase64.replace(/^data:image\/jpeg;base64,/, ''), 'base64');
+  } finally {
+    if (tempPage) {
+      try {
+        await tempPage.close();
+      } catch (_) {}
+    }
+  }
+}
+
 // Helper function to auto-scroll page to load lazy content
 async function autoScroll(page) {
   await page.evaluate(async () => {
     await new Promise((resolve) => {
       let totalHeight = 0;
-      const distance = 400;
-      const maxScrolls = 80; // Limit to prevent infinite scroll hangs
+      const distance = 1000; // Scroll in larger steps
+      const maxScrolls = 15; // Limit scrolls to prevent hanging
       let scrolls = 0;
       const timer = setInterval(() => {
         const scrollHeight = document.body.scrollHeight;
@@ -42,16 +227,16 @@ async function autoScroll(page) {
           window.scrollTo(0, 0); // Scroll back to top
           resolve();
         }
-      }, 100);
+      }, 25);
     });
   });
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 200)); // Wait 200ms for settle
 }
 
 // Base directory is the server project root (e.g. c:/screenshot_project/server)
 const baseDir = path.resolve(__dirname, '..', '..');
-export const screenshotsDir = path.join(baseDir, 'public', 'screenshots');
-export const reportsDir = path.join(baseDir, 'public', 'reports');
+export const screenshotsDir = path.join(baseDir, '..', 'client', 'public', 'screenshots');
+export const reportsDir = path.join(baseDir, '..', 'client', 'public', 'reports');
 
 // Ensure screenshots and reports directories exist at startup
 if (!fs.existsSync(screenshotsDir)) {
@@ -76,6 +261,11 @@ export async function getCaptureProgressState() {
 export async function runCaptureSession(triggerName = 'Manual Trigger') {
   console.log(`Starting capture session triggered by: ${triggerName}`);
   
+  if (captureProgress?.active) {
+    console.log('Capture session is already active. Ignoring trigger.');
+    return;
+  }
+
   if (triggerName === 'Manual Trigger') {
     try {
       await prisma.website.updateMany({
@@ -114,13 +304,10 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     total: activeSites.length
   };
   
-  let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      ignoreHTTPSErrors: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    let browser;
+  try {
+    browser = await getBrowserInstance();
   } catch (err) {
     console.error('Failed to launch browser:', err);
     captureProgress = { active: false, status: 'Failed to launch browser', current: 0, total: 0 };
@@ -152,9 +339,74 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     let page;
     try {
       page = await browser.newPage();
-      await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
+      
+      // Request interception to block tracking, ads, social and font resources
+      await page.setRequestInterception(true);
+      page.on('request', (req) => {
+        const resourceType = req.resourceType();
+        const url = req.url().toLowerCase();
+        
+        const blockedPatterns = [
+          'google-analytics',
+          'googletagmanager',
+          'doubleclick',
+          'adsystem',
+          'adserver',
+          'facebook.com/plugins',
+          'twitter.com/widgets',
+          'analytics.js',
+          'amplitude.com',
+          'mixpanel.com',
+          'hotjar',
+          'sentry.io',
+          'bugsnag',
+          'optimizely',
+          'crisp.chat',
+          'intercom.io',
+          'amazon-adsystem',
+          'adnxs',
+          'smartadserver',
+          'pubmatic',
+          'rubiconproject',
+          'openx',
+          'casalemedia',
+          'criteo',
+          'yieldlab',
+          'bidswitch',
+          'teads',
+          'outbrain',
+          'taboola',
+          'revcontent',
+          'adroll',
+          'hubspot',
+          'marketo',
+          'pardot',
+          'drift',
+          'segment',
+          'customer.io',
+          'facebook.net',
+          'googleadservices',
+          'googlesyndication',
+          'inspectlet',
+          'fullstory',
+          'luckyorange',
+          'crazyegg'
+        ];
+        const blockedTypes = ['font', 'media', 'websocket', 'other'];
+
+        if (
+          blockedTypes.includes(resourceType) ||
+          blockedPatterns.some((pattern) => url.includes(pattern))
+        ) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
+      await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
       await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-      await page.setDefaultNavigationTimeout(60000);
+      await page.setDefaultNavigationTimeout(25000);
     } catch (e) {
       console.error(`Failed to create page context for ${site.name}:`, e.message);
       completedCount++;
@@ -165,12 +417,12 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     let loadTime = 0;
     let siteSuccess = true;
     let siteError = null;
-    let filename = `${site.id}_${timestamp}.png`;
+    let filename = `${site.id}_${timestamp}.jpg`;
     let screenshotPath = path.join(screenshotsDir, filename);
     const startTime = Date.now();
 
     try {
-      const response = await page.goto(site.url, { waitUntil: 'networkidle2', timeout: 60000 });
+      const response = await page.goto(site.url, { waitUntil: 'load', timeout: 20000 });
       
       // Simulate user interaction to bypass optimization plugins that delay JS execution until user interaction
       try {
@@ -190,9 +442,9 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         console.log(`Failed to simulate interaction for ${site.name}:`, interactionErr.message);
       }
 
-      // Wait for network idle to ensure resources/APIs are loaded (especially after dynamic scripts trigger)
+      // Wait for network idle to settle, but with a very short timeout (max 3000ms)
       try {
-        await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 });
+        await page.waitForNetworkIdle({ idleTime: 500, timeout: 3000 });
       } catch (idleErr) {
         console.log(`waitForNetworkIdle timed out for ${site.name}, proceeding anyway...`);
       }
@@ -238,8 +490,8 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         console.log(`Preloader visibility polling failed for ${site.name}:`, err.message);
       }
 
-      // Add a short 1.5-second stabilization buffer to let page animations/layout settle
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Add a short 0.5-second stabilization buffer to let page animations/layout settle
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Force hide any remaining preloader/spinner elements in case they are stuck
       try {
@@ -272,14 +524,18 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         siteError = `HTTP Error ${status}`;
       } else {
         await autoScroll(page);
-        await page.screenshot({ path: screenshotPath, fullPage: true });
+        await verifyImagesLoaded(page);
+        await preparePageForScreenshot(page);
+        // Capture image as raw buffer and compress using browser canvas
+        const rawBuffer = await page.screenshot({ type: 'jpeg', quality: 70, fullPage: true });
+        const compressedBuffer = await compressImageBuffer(browser, rawBuffer);
+        await fs.promises.writeFile(screenshotPath, compressedBuffer);
       }
     } catch (err) {
       const currentUrl = page.url();
       if (err.message.includes('timeout') && currentUrl && currentUrl !== 'about:blank') {
         try {
           console.log(`Navigation timed out for ${site.name}, attempting fallback screenshot...`);
-          // Try simulating interaction on timeout fallback as well
           try {
             await page.mouse.move(100, 100);
             await page.evaluate(() => {
@@ -289,9 +545,7 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
               });
             });
           } catch (e) {}
-          // Wait a 3-second buffer before capture fallback screenshot
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          // Attempt to hide common preloader/spinner elements on fallback
+          await new Promise(resolve => setTimeout(resolve, 500));
           try {
             await page.evaluate(() => {
               const loaderSelectors = [
@@ -312,7 +566,11 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
             });
           } catch (e) {}
           await autoScroll(page);
-          await page.screenshot({ path: screenshotPath, fullPage: true });
+          await verifyImagesLoaded(page);
+          await preparePageForScreenshot(page);
+          const rawBuffer = await page.screenshot({ type: 'jpeg', quality: 70, fullPage: true });
+          const compressedBuffer = await compressImageBuffer(browser, rawBuffer);
+          await fs.promises.writeFile(screenshotPath, compressedBuffer);
           loadTime = Date.now() - startTime;
           siteSuccess = true;
           siteError = null;
@@ -631,8 +889,7 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
 
   await Promise.all(workers);
 
-  // Close monitoring browser instance
-  await browser.close();
+  // Reuse browser, so do not close it here
 
   // Calculate success / failed counts
   let successCount = 0;
@@ -645,22 +902,133 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     }
   }
 
-  captureProgress.status = 'Generating PDF report...';
-  console.log('Generating A4 PDF Report...');
-
-  // Relaunch browser to render PDF cleanly
-  let pdfBrowser;
   const pdfFilename = `WebsiteReport_${dateObj.getFullYear()}${(dateObj.getMonth()+1).toString().padStart(2,'0')}${dateObj.getDate().toString().padStart(2,'0')}_${dateObj.getHours().toString().padStart(2,'0')}${dateObj.getMinutes().toString().padStart(2,'0')}.pdf`;
   const pdfPath = path.join(reportsDir, pdfFilename);
 
   try {
-    pdfBrowser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    await generatePdfReport({
+      reportDetails,
+      successCount,
+      failedCount,
+      activeSitesCount: activeSites.length,
+      triggerName,
+      dateStr,
+      timeStr,
+      pdfPath,
+      screenshotsDir
     });
-    const pdfPage = await pdfBrowser.newPage();
+  } catch (err) {
+    console.error('Error rendering report PDF:', err);
+  }
 
-    const successPct = Math.round((successCount / activeSites.length) * 100);
+  // Create new report database entry
+  const newReport = {
+    id: timestamp,
+    date: dateStr,
+    time: timeStr,
+    total: activeSites.length,
+    success: successCount,
+    failed: failedCount,
+    file: pdfFilename,
+    details: reportDetails
+  };
+  
+  try {
+    await createReport(newReport);
+  } catch (dbErr) {
+    console.error('Failed to create report entry in database:', dbErr);
+  }
+  captureProgress.status = 'Sending email alerts...';
+  console.log('Sending emails...');
+
+  let settings = {};
+  try {
+    settings = await getSettings();
+  } catch (err) {
+    console.error('Failed to fetch settings for email notifications:', err);
+  }
+
+  // Ensure the PDF file is fully generated before sending the email.
+  // Verify the PDF file exists before attaching it.
+  const pdfExists = await fs.promises.access(pdfPath, fs.constants.F_OK).then(() => true).catch(() => false);
+  if (pdfExists) {
+    try {
+      await sendEmailNotification(settings, newReport, pdfPath);
+    } catch (emailErr) {
+      console.error('Failed to send email notification:', emailErr);
+    }
+  } else {
+    console.error(`[Alert System] PDF file does not exist at ${pdfPath}. Skipping email notification.`);
+  }
+
+  captureProgress = {
+    active: false,
+    status: 'Completed successfully!',
+    current: 0,
+    total: 0
+  };
+  console.log('Capture session completed successfully.');
+  } finally {
+    captureProgress.active = false;
+  }
+}
+
+export async function generatePdfReport({
+  reportDetails,
+  successCount,
+  failedCount,
+  activeSitesCount,
+  triggerName,
+  dateStr,
+  timeStr,
+  pdfPath,
+  screenshotsDir
+}) {
+  let pdfBrowser = null;
+  let pdfPage = null;
+  try {
+    console.log('[Puppeteer PDF] Launching dedicated browser on server...');
+    const startTimeLaunch = Date.now();
+    try {
+      pdfBrowser = await puppeteer.launch({
+        headless: true,
+        ignoreHTTPSErrors: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--allow-file-access-from-files',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-extensions',
+          '--disable-notifications',
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-breakpad',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-features=Translate',
+          '--disable-ipc-flooding-protection',
+          '--disable-renderer-backgrounding',
+          '--force-color-profile=srgb',
+          '--metrics-recording-only',
+          '--mute-audio',
+          '--disable-web-security',
+        ]
+      });
+      console.log(`[Puppeteer PDF] Dedicated server browser launched in ${Date.now() - startTimeLaunch}ms`);
+      
+      console.log('[Puppeteer PDF] Creating new server page context...');
+      const startTimePage = Date.now();
+      pdfPage = await pdfBrowser.newPage();
+      console.log(`[Puppeteer PDF] Server page context created in ${Date.now() - startTimePage}ms`);
+    } catch (browserErr) {
+      console.error("[PDF Generator] Failed to initialize dedicated server Puppeteer browser or page:");
+      console.error(browserErr);
+      console.error(browserErr.stack);
+      throw browserErr;
+    }
 
     const sslAlerts = reportDetails.filter(d => d.ssl && d.ssl.warning).length;
     const domainAlerts = reportDetails.filter(d => d.domain && d.domain.warning).length;
@@ -744,32 +1112,28 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
         .screenshot-section {
           page-break-before: always;
           page-break-inside: avoid;
-          height: 260mm;
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
+          margin-bottom: 20px;
+          text-align: center;
         }
         .screenshot-header {
           border-bottom: 1px solid #e5e7eb;
           padding-bottom: 4px;
-          margin-bottom: 10px;
-          font-size: 11px;
+          margin-bottom: 15px;
+          font-size: 12px;
           font-weight: bold;
           color: #374151;
-          width: 100%;
           text-align: left;
         }
         .screenshot-img-container-full {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           width: 100%;
-          overflow: hidden;
+          text-align: center;
         }
         .screenshot-img-full {
-          display: block;
-          object-fit: contain;
+          display: inline-block;
+          max-width: 100%;
+          height: auto;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
         }
       </style>
     </head>
@@ -788,7 +1152,7 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
 
       <div class="summary-grid">
         <div class="card">
-          <div class="value">${activeSites.length}</div>
+          <div class="value">${activeSitesCount}</div>
           <div class="label">Total Websites</div>
         </div>
         <div class="card online">
@@ -816,7 +1180,6 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
       <!-- Alerts Section -->
       <div class="alerts-box ${activeAlertList.length === 0 ? 'nominal' : 'triggered'}">
         <h3>${activeAlertList.length === 0 ? '✅ All Systems Nominal' : '⚠️ System Alerts Triggered'}</h3>
-        {/* Alerts list */}
         ${activeAlertList.length === 0 
           ? `<p style="margin:0; font-size:11px; color:#166534">No active threat, SSL certificate, or domain expiry alerts detected for all monitored websites.</p>`
           : `<ul>${activeAlertList.map(a => `<li>${a}</li>`).join('')}</ul>`
@@ -955,46 +1318,82 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
       </table>
     `;
 
-    // Embed base64-encoded screenshots for A4 printing PDF safely without relative URL issues
+    const PLACEHOLDER_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='800' viewBox='0 0 1280 800'><rect width='1280' height='800' fill='%23f3f4f6'/><text x='50%25' y='50%25' font-family='sans-serif' font-size='30' fill='%239ca3af' dominant-baseline='middle' text-anchor='middle'>Screenshot Not Available</text></svg>";
+
+    // Embed screenshots for A4 printing PDF using local file:/// URLs and SVG placeholders
     let embeddedCount = 0;
     for (let i = 0; i < reportDetails.length; i++) {
       const d = reportDetails[i];
-      if (d && d.status === 'success' && d.screenshot) {
-        const fullImagePath = path.join(screenshotsDir, d.screenshot);
-        if (fs.existsSync(fullImagePath)) {
-          const base64Image = fs.readFileSync(fullImagePath).toString('base64');
-          
-          let targetWidth = 718;
-          let targetHeight = 907;
+      if (d) {
+        let dataUrl = PLACEHOLDER_IMAGE;
+        let isPlaceholder = true;
+
+        if (d.status === 'success' && d.screenshot) {
+          const fullImagePath = path.join(screenshotsDir, d.screenshot);
           try {
-            const dimensions = getPngDimensions(fullImagePath);
+            const fileExists = await fs.promises.access(fullImagePath, fs.constants.F_OK).then(() => true).catch(() => false);
+            if (fileExists) {
+              dataUrl = 'file:///' + fullImagePath.replace(/\\/g, '/');
+              isPlaceholder = false;
+            } else {
+              console.warn(`[PDF Generator] Missing screenshot file at path: ${fullImagePath}`);
+            }
+          } catch (fileErr) {
+            console.error(`[PDF Generator] Failed to verify screenshot existence ${d.screenshot}:`, fileErr.message);
+          }
+        }
+
+        let targetWidth = 718;
+        let targetHeight = 449; // Default to aspect ratio of 1280x800 viewport
+
+        if (!isPlaceholder && d.screenshot) {
+          const fullImagePath = path.join(screenshotsDir, d.screenshot);
+          const extension = path.extname(d.screenshot).toLowerCase();
+          
+          let dimensions = null;
+          try {
+            if (extension === '.png') {
+              dimensions = getPngDimensions(fullImagePath);
+            } else if (extension === '.jpg' || extension === '.jpeg') {
+              dimensions = getJpgDimensions(fullImagePath);
+            }
+          } catch (dimErr) {
+            console.warn(`[PDF Generator] Failed to get dimensions for screenshot ${d.screenshot} (corrupted or missing header), using fallback defaults:`, dimErr.message);
+          }
+
+          if (dimensions) {
             const originalWidth = dimensions.width;
             const originalHeight = dimensions.height;
-            
+
             // Bounding box at 96 DPI: width ~ 718px, height ~ 907px
             const maxWidth = 718;
             const maxHeight = 907;
-            
+
             const scaleX = maxWidth / originalWidth;
             const scaleY = maxHeight / originalHeight;
-            const scale = Math.min(scaleX, scaleY, 1.0);
-            
+            let scale = Math.min(scaleX, scaleY, 1.0);
+
+            // If the image is very tall, the width becomes extremely narrow.
+            // Ensure a minimum target width (e.g. 380px) so the screenshot is readable.
+            const minReadableWidth = Math.min(380, originalWidth, maxWidth);
+            if (originalWidth * scale < minReadableWidth) {
+              scale = minReadableWidth / originalWidth;
+            }
+
             targetWidth = Math.round(originalWidth * scale);
             targetHeight = Math.round(originalHeight * scale);
-          } catch (dimErr) {
-            console.error(`Failed to read dimensions for screenshot ${d.screenshot}:`, dimErr);
           }
-
-          reportHtml += `
-            <div class="screenshot-section">
-              <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
-              <div class="screenshot-img-container-full">
-                <img class="screenshot-img-full" src="data:image/png;base64,${base64Image}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
-              </div>
-            </div>
-          `;
-          embeddedCount++;
         }
+
+        reportHtml += `
+          <div class="screenshot-section">
+            <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
+            <div class="screenshot-img-container-full">
+              <img class="screenshot-img-full" src="${dataUrl}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
+            </div>
+          </div>
+        `;
+        embeddedCount++;
       }
     }
 
@@ -1003,54 +1402,74 @@ export async function runCaptureSession(triggerName = 'Manual Trigger') {
     </html>
     `;
 
-    await pdfPage.setContent(reportHtml, { waitUntil: 'load' });
-    await pdfPage.pdf({
-      path: pdfPath,
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
-    });
+    const tempHtmlPath = pdfPath.replace(/\.pdf$/i, '.html');
+    await fs.promises.writeFile(tempHtmlPath, reportHtml, 'utf8');
+    try {
+      const pageUrl = 'file:///' + tempHtmlPath.replace(/\\/g, '/');
+      
+      console.log('[Puppeteer PDF] Navigating to pageUrl...');
+      const startTimeGoto = Date.now();
+      await pdfPage.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      console.log(`[Puppeteer PDF] Navigated to pageUrl in ${Date.now() - startTimeGoto}ms`);
+
+      // Wait for all local images to load asynchronously (max 4-second timeout limit)
+      console.log('[Puppeteer PDF] Waiting for local images to load...');
+      const startTimeImages = Date.now();
+      await Promise.race([
+        pdfPage.evaluate(async () => {
+          const imgs = Array.from(document.querySelectorAll('img'));
+          await Promise.all(
+            imgs.map((img) => {
+              if (img.complete) return Promise.resolve();
+              return new Promise((resolve) => {
+                img.addEventListener('load', () => resolve(), { once: true });
+                img.addEventListener('error', () => resolve(), { once: true });
+                setTimeout(() => resolve(), 3000); // 3s fallback per image
+              });
+            })
+          );
+        }),
+        new Promise((resolve) => setTimeout(resolve, 4000)) // 4s absolute max wait for all images
+      ]);
+      console.log(`[Puppeteer PDF] Images loaded/settled in ${Date.now() - startTimeImages}ms`);
+
+      console.log('[Puppeteer PDF] Generating and writing PDF file...');
+      const startTimePdf = Date.now();
+      await pdfPage.pdf({
+        path: pdfPath,
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
+      });
+      console.log(`[Puppeteer PDF] PDF rendered and written to disk in ${Date.now() - startTimePdf}ms`);
+    } finally {
+      const tempExists = await fs.promises.access(tempHtmlPath, fs.constants.F_OK).then(() => true).catch(() => false);
+      if (tempExists) {
+        try {
+          const startTimeUnlink = Date.now();
+          await fs.promises.unlink(tempHtmlPath);
+          console.log(`[PDF Generator] Unlinked temporary HTML file in ${Date.now() - startTimeUnlink}ms`);
+        } catch (_) {}
+      }
+    }
 
   } catch (err) {
     console.error('Error rendering report PDF:', err);
   } finally {
-    if (pdfBrowser) await pdfBrowser.close();
+    if (pdfPage) {
+      try {
+        const startTimeClose = Date.now();
+        await pdfPage.close();
+        console.log(`[PDF Generator] Closed pdfPage context in ${Date.now() - startTimeClose}ms`);
+      } catch (_) {}
+    }
+    if (pdfBrowser) {
+      try {
+        const startTimeCloseBrowser = Date.now();
+        await pdfBrowser.close();
+        console.log(`[PDF Generator] Closed dedicated server browser in ${Date.now() - startTimeCloseBrowser}ms`);
+      } catch (_) {}
+    }
   }
-
-  // Create new report database entry
-  const newReport = {
-    id: timestamp,
-    date: dateStr,
-    time: timeStr,
-    total: activeSites.length,
-    success: successCount,
-    failed: failedCount,
-    file: pdfFilename,
-    details: reportDetails
-  };
-  
-  try {
-    await createReport(newReport);
-  } catch (dbErr) {
-    console.error('Failed to create report entry in database:', dbErr);
-  }
-  captureProgress.status = 'Sending email alerts...';
-  console.log('Sending emails...');
-
-  let settings = {};
-  try {
-    settings = await getSettings();
-  } catch (err) {
-    console.error('Failed to fetch settings for email notifications:', err);
-  }
-
-  await sendEmailNotification(settings, newReport, pdfPath);
-
-  captureProgress = {
-    active: false,
-    status: 'Completed successfully!',
-    current: 0,
-    total: 0
-  };
-  console.log('Capture session completed successfully.');
 }
+

@@ -93,24 +93,26 @@ model EmailRecipient {
 
 // 7. SMTP Settings Model
 model SmtpSetting {
-  id   Int     @id @default(1)
-  host String? @db.VarChar(255)
-  port String? @db.VarChar(50)
-  user String? @db.VarChar(255)
-  pass String? @db.VarChar(255)
+  id             Int     @id @default(1)
+  host           String? @db.VarChar(255)
+  port           String? @db.VarChar(50)
+  user           String? @db.VarChar(255)
+  pass           String? @db.VarChar(255)
+  globalCcEmail  String? @db.VarChar(255)
 
   @@map("smtp_settings")
 }
 
 // 8. SMTP Config Model (For Client App Settings)
 model SmtpConfig {
-  id        Int      @id @default(autoincrement())
-  host      String   @db.VarChar(255)
-  port      Int
-  username  String   @db.VarChar(255)
-  password  String   @db.VarChar(255)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             Int      @id @default(autoincrement())
+  host           String   @db.VarChar(255)
+  port           Int
+  username       String   @db.VarChar(255)
+  password       String   @db.VarChar(255)
+  globalCcEmail  String?  @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("smtp_configs")
 }

@@ -186,7 +186,8 @@ exports.Prisma.SmtpSettingScalarFieldEnum = {
   host: 'host',
   port: 'port',
   user: 'user',
-  pass: 'pass'
+  pass: 'pass',
+  globalCcEmail: 'globalCcEmail'
 };
 
 exports.Prisma.SmtpConfigScalarFieldEnum = {
@@ -195,6 +196,7 @@ exports.Prisma.SmtpConfigScalarFieldEnum = {
   port: 'port',
   username: 'username',
   password: 'password',
+  globalCcEmail: 'globalCcEmail',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 };
@@ -286,13 +288,15 @@ exports.Prisma.SmtpSettingOrderByRelevanceFieldEnum = {
   host: 'host',
   port: 'port',
   user: 'user',
-  pass: 'pass'
+  pass: 'pass',
+  globalCcEmail: 'globalCcEmail'
 };
 
 exports.Prisma.SmtpConfigOrderByRelevanceFieldEnum = {
   host: 'host',
   username: 'username',
-  password: 'password'
+  password: 'password',
+  globalCcEmail: 'globalCcEmail'
 };
 
 exports.Prisma.ScanExecutionLogOrderByRelevanceFieldEnum = {

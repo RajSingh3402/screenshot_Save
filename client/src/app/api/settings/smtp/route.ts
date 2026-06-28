@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { host, port, username, password } = body;
+    const { host, port, username, password, globalCcEmail } = body;
 
     if (!host || !port || !username || !password) {
       return NextResponse.json(
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
         port: portNumber,
         username: String(username).trim(),
         password: String(password).trim(),
+        globalCcEmail: globalCcEmail ? String(globalCcEmail).trim() : null,
       },
     });
 
@@ -86,7 +87,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { host, port, username, password } = body;
+    const { host, port, username, password, globalCcEmail } = body;
 
     if (!host || !port || !username || !password) {
       return NextResponse.json(
@@ -116,6 +117,7 @@ export async function PUT(request: NextRequest) {
           port: portNumber,
           username: String(username).trim(),
           password: String(password).trim(),
+          globalCcEmail: globalCcEmail ? String(globalCcEmail).trim() : null,
         },
       });
     } else {
@@ -125,6 +127,7 @@ export async function PUT(request: NextRequest) {
           port: portNumber,
           username: String(username).trim(),
           password: String(password).trim(),
+          globalCcEmail: globalCcEmail ? String(globalCcEmail).trim() : null,
         },
       });
     }

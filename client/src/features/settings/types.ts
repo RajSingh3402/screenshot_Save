@@ -4,6 +4,7 @@ export interface SmtpConfig {
   port: number;
   username: string;
   password?: string;
+  globalCcEmail?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -174,11 +174,11 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-10">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Metrics Report Portal</h1>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 6, marginBottom: 20 }}>
             Active checks history, certificate expiries, domain logs, and security checks summary
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
+        <div className="flex flex-wrap gap-2 items-center  justify-start md:justify-end">
           <button 
             onClick={handleRefresh} 
             disabled={refreshing}
@@ -218,7 +218,7 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       </div>
 
       {/* Main Tabs Navigation */}
-      <div className="flex flex-wrap border-b border-[#1e2130] mb-5 gap-2">
+      <div className="flex flex-wrap border-b border-[#1e2130] gap-2" style={{ display: 'flex', flexWrap: 'wrap', borderBottom: '1px solid #1e2130', gap: '8px', marginBottom: '24px' }}>
         <button 
           onClick={() => setMainTab('latest')}
           style={{
@@ -257,15 +257,15 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
       {mainTab === 'latest' ? (
         <div>
           {/* Sub-tabs for Latest Metrics */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {[
+          <div className="flex flex-wrap gap-2" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '24px' }}>
+            {([
               { id: 'ssl', label: 'SSL Monitoring', icon: '🔐' },
               { id: 'domain', label: 'Domain Monitoring', icon: '🌐' },
               { id: 'malware', label: 'Malware Monitoring', icon: '🛡️' }
-            ].map(tab => (
+            ] as const).map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setSubTab(tab.id as any)}
+                onClick={() => setSubTab(tab.id)}
                 style={{
                   background: subTab === tab.id ? '#1e2130' : 'rgba(30, 33, 48, 0.3)',
                   border: '1px solid #1e2130',
@@ -462,8 +462,8 @@ export function MetricsReport({ openScreenshot, user }: MetricsReportProps) {
         /* HISTORY TAB */
         <div>
           {/* Search and Filters */}
-          <div className="flex flex-col md:flex-row gap-3 mb-4 md:items-center">
-            <div className="flex-1 w-full">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+            <div className="flex-1 w-full" style={{ flex: 1, minWidth: '280px' }}>
               <input
                 type="text"
                 placeholder="🔍 Search history by website name or URL..."

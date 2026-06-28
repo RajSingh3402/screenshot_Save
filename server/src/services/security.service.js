@@ -215,7 +215,7 @@ export async function checkDomainExpiry(urlString) {
     return {
       expiryDate: expiryDate,
       daysRemaining: daysRemaining,
-      warning: daysRemaining !== null && daysRemaining <= 60
+      warning: daysRemaining !== null && daysRemaining <= 160
     };
 
   } catch (err) {

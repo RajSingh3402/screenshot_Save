@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { getSettings } from './db.service.js';
 import { runCaptureSession, captureProgress } from './capture.service.js';
-import { prisma } from '../lib/prisma.ts';
+import { prisma } from '../lib/prisma.js';
 
 let isExecuting = false; // Prevents overlapping scheduler ticks
 
@@ -28,71 +28,92 @@ export function initScheduler() {
         s => s.enabled && s.time === currentTimeStr
       );
 
-      // Avoid launching double captures inside the same minute by checking if already capturing
-      if (matchingSchedule && !captureProgress.active) {
-        console.log(`[Scheduler] Scheduled capture time matches: ${currentTimeStr}. Launching check...`);
-        
-        // Prevent duplicate execution within the same minute
-        const startOfMinute = new Date();
-        startOfMinute.setSeconds(0, 0);
+      if (matchingSchedule) {
+        // Attempt to get the database lock
+        const lockResult = await prisma.$queryRawUnsafe(`SELECT GET_LOCK('sitewatch_scheduler_lock', 0) as locked`);
+        const isLocked = lockResult && 
+                         lockResult[0] && 
+                         (lockResult[0].locked === 1 || 
+                          lockResult[0].locked === '1' || 
+                          lockResult[0].locked === true || 
+                          String(lockResult[0].locked) === '1');
 
-        const duplicateLog = await prisma.scanExecutionLog.findFirst({
-          where: {
-            scheduleTime: currentTimeStr,
-            executedAt: {
-              gte: startOfMinute
-            }
-          }
-        });
-
-        if (duplicateLog) {
-          console.log(`[Scheduler] Schedule for ${currentTimeStr} already executed in this minute. Skipping.`);
+        if (!isLocked) {
+          console.log('[Scheduler] Another scheduler instance is already running or has the lock. Skipping scheduled run.');
           return;
         }
 
-        // Create ScanExecutionLog in progress
-        const logEntry = await prisma.scanExecutionLog.create({
-          data: {
-            scheduleTime: currentTimeStr,
-            status: 'in_progress',
-            message: 'Automatic background scan initiated by Express cron scheduler.',
-            executedAt: new Date()
-          }
-        });
-
         try {
-          await runCaptureSession(`Scheduled Check (${currentTimeStr})`);
-          
-          // Fetch latest report info to log stats
-          const latestReport = await prisma.report.findFirst({
-            orderBy: { id: 'desc' }
-          });
-          
-          let reportMsg = '';
-          if (latestReport) {
-            // Verify that the report is recent (within last 5 minutes)
-            const reportTimeId = Number(latestReport.id);
-            if (Date.now() - reportTimeId < 300000) {
-              reportMsg = ` Checked: ${latestReport.total}, Success: ${latestReport.success}, Failed: ${latestReport.failed}.`;
+          // Avoid launching double captures inside the same minute by checking if already capturing
+          if (!captureProgress.active) {
+            console.log(`[Scheduler] Scheduled capture time matches: ${currentTimeStr}. Launching check...`);
+            
+            // Prevent duplicate execution within the same minute
+            const startOfMinute = new Date();
+            startOfMinute.setSeconds(0, 0);
+
+            const duplicateLog = await prisma.scanExecutionLog.findFirst({
+              where: {
+                scheduleTime: currentTimeStr,
+                executedAt: {
+                  gte: startOfMinute
+                }
+              }
+            });
+
+            if (duplicateLog) {
+              console.log(`[Scheduler] Schedule for ${currentTimeStr} already executed in this minute. Skipping.`);
+              return;
+            }
+
+            // Create ScanExecutionLog in progress
+            const logEntry = await prisma.scanExecutionLog.create({
+              data: {
+                scheduleTime: currentTimeStr,
+                status: 'in_progress',
+                message: 'Automatic background scan initiated by Express cron scheduler.',
+                executedAt: new Date()
+              }
+            });
+
+            try {
+              await runCaptureSession(`Scheduled Check (${currentTimeStr})`);
+              
+              // Fetch latest report info to log stats
+              const latestReport = await prisma.report.findFirst({
+                orderBy: { id: 'desc' }
+              });
+              
+              let reportMsg = '';
+              if (latestReport) {
+                // Verify that the report is recent (within last 5 minutes)
+                const reportTimeId = Number(latestReport.id);
+                if (Date.now() - reportTimeId < 300000) {
+                  reportMsg = ` Checked: ${latestReport.total}, Success: ${latestReport.success}, Failed: ${latestReport.failed}.`;
+                }
+              }
+
+              await prisma.scanExecutionLog.update({
+                where: { id: logEntry.id },
+                data: {
+                  status: 'success',
+                  message: `Scan finished successfully.${reportMsg}`
+                }
+              });
+            } catch (captureErr) {
+              console.error('[Scheduler] Capture session failed:', captureErr);
+              await prisma.scanExecutionLog.update({
+                where: { id: logEntry.id },
+                data: {
+                  status: 'failed',
+                  message: `Execution failed: ${captureErr.message || captureErr}`
+                }
+              });
             }
           }
-
-          await prisma.scanExecutionLog.update({
-            where: { id: logEntry.id },
-            data: {
-              status: 'success',
-              message: `Scan finished successfully.${reportMsg}`
-            }
-          });
-        } catch (captureErr) {
-          console.error('[Scheduler] Capture session failed:', captureErr);
-          await prisma.scanExecutionLog.update({
-            where: { id: logEntry.id },
-            data: {
-              status: 'failed',
-              message: `Execution failed: ${captureErr.message || captureErr}`
-            }
-          });
+        } finally {
+          // Release database lock
+          await prisma.$queryRawUnsafe(`SELECT RELEASE_LOCK('sitewatch_scheduler_lock')`);
         }
       }
     } catch (err) {

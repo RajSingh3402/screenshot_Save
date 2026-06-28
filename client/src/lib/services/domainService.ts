@@ -142,7 +142,7 @@ export async function checkDomainExpiry(urlString: string): Promise<DomainCheckR
     return {
       expiryDate: expiryDate,
       daysRemaining: daysRemaining,
-      warning: daysRemaining !== null && daysRemaining <= 60,
+      warning: daysRemaining !== null && daysRemaining <= 160,
     };
   } catch (err: any) {
     const fallbackExpiry = new Date();

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { S } from '@/styles/theme';
 
 interface DashboardProps {
@@ -9,11 +9,42 @@ interface DashboardProps {
 }
 
 export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: DashboardProps) {
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const active = sites.filter(s => s.status === "active");
   const failed = sites.filter(s => s.lastStatus === "failed");
   const success = sites.filter(s => s.lastStatus === "success" && s.status === "active");
   const pct = Math.round((success.length / Math.max(active.length, 1)) * 100);
   const pctColor = pct > 90 ? "#22c55e" : pct > 70 ? "#f59e0b" : "#ef4444";
+
+  const downloadPdf = async (reportId: number, filename: string) => {
+    setDownloadingId(reportId);
+    try {
+      const res = await fetch(`/api/reports/${reportId}/pdf`);
+      if (!res.ok) {
+        let errorMsg = "Failed to download PDF report.";
+        try {
+          const data = await res.json();
+          errorMsg = data.error || errorMsg;
+        } catch (_) {}
+        alert(errorMsg);
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `Report_${reportId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      alert("An error occurred while downloading the PDF report.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const statCards = [
     { label: "Total Websites", value: sites.length, sub: "Configured", color: "#6366f1", icon: "🌐" },
@@ -71,7 +102,22 @@ export function Dashboard({ sites, reports, triggerCapture, openScreenshot }: Da
                     <td style={S.td({ color: "#22c55e", fontWeight: 600 })}>{r.success}</td>
                     <td style={S.td({ color: r.failed > 0 ? "#ef4444" : "#64748b", fontWeight: r.failed > 0 ? 600 : 400 })}>{r.failed}</td>
                     <td style={{ padding: "10px 16px", textAlign: "right" }}>
-                      <button onClick={() => window.open(`/api/reports/${r.id}/pdf`, "_blank")} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
+                      <button 
+                        onClick={() => downloadPdf(Number(r.id), r.file)} 
+                        disabled={downloadingId === Number(r.id)}
+                        style={{ 
+                          background: "#1e2a4a", 
+                          color: "#818cf8", 
+                          border: "1px solid #2d3a5e", 
+                          borderRadius: 6, 
+                          padding: "4px 10px", 
+                          fontSize: 11, 
+                          cursor: downloadingId === Number(r.id) ? "not-allowed" : "pointer",
+                          opacity: downloadingId === Number(r.id) ? 0.7 : 1
+                        }}
+                      >
+                        {downloadingId === Number(r.id) ? "⏳..." : "⬇ PDF"}
+                      </button>
                     </td>
                   </tr>
                 ))}

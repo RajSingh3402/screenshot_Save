@@ -51,14 +51,14 @@ export default function App() {
       .then(data => {
         setCurrentUser(data.user);
         setSessionLoading(false);
+        // Only fetch database metrics after auth is verified successfully
+        fetchSites();
+        fetchReports();
       })
       .catch(() => {
         // Let Next.js middleware handle redirects, but redirect as fallback
         window.location.href = '/login';
       });
-
-    fetchSites();
-    fetchReports();
   }, []);
 
   // Poll progress state
@@ -79,6 +79,26 @@ export default function App() {
     }, 800);
   };
 
+  async function triggerCaptureForce() {
+    try {
+      const res = await fetch('/api/capture-now', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: true })
+      });
+      if (res.ok) {
+        setProgress({ active: true, status: "Forcing capture run...", current: 0, total: 0 });
+        pollCaptureProgress();
+      } else if (res.status === 403) {
+        alert("Access Denied: Only Editors and Admins can trigger capture.");
+      } else {
+        alert("Failed to force reset capture.");
+      }
+    } catch (e) {
+      alert("Failed to communicate with capture server.");
+    }
+  }
+
   async function triggerCapture() {
     try {
       const res = await fetch('/api/capture-now', { method: 'POST' });
@@ -87,6 +107,11 @@ export default function App() {
         pollCaptureProgress();
       } else if (res.status === 403) {
         alert("Access Denied: Only Editors and Admins can trigger capture.");
+      } else if (res.status === 409) {
+        const forceReset = confirm("A capture session is already in progress. Would you like to force reset it and start a new scan?");
+        if (forceReset) {
+          await triggerCaptureForce();
+        }
       } else {
         alert("A capture is already running.");
       }
@@ -123,14 +148,25 @@ export default function App() {
     return true; // Admin has full access
   };
 
-  const pages: Record<string, React.ReactNode> = {
-    dashboard: <Dashboard sites={sites} reports={reports} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />,
-    websites: <WebsiteManagement sites={sites} refreshSites={fetchSites} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />,
-    reports: <Reports reports={reports} openScreenshot={openScreenshot} user={currentUser} refreshReports={fetchReports} />,
-    metrics: <MetricsReport openScreenshot={openScreenshot} user={currentUser} />,
-    excel: <ExcelImport refreshSites={fetchSites} />,
-    users: <UserManagement />,
-    settings: <SettingsManagement />,
+  const renderPage = () => {
+    switch (page) {
+      case 'dashboard':
+        return <Dashboard sites={sites} reports={reports} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />;
+      case 'websites':
+        return <WebsiteManagement sites={sites} refreshSites={fetchSites} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />;
+      case 'reports':
+        return <Reports reports={reports} openScreenshot={openScreenshot} user={currentUser} refreshReports={fetchReports} />;
+      case 'metrics':
+        return <MetricsReport openScreenshot={openScreenshot} user={currentUser} />;
+      case 'excel':
+        return <ExcelImport refreshSites={fetchSites} />;
+      case 'users':
+        return <UserManagement />;
+      case 'settings':
+        return <SettingsManagement />;
+      default:
+        return <Dashboard sites={sites} reports={reports} triggerCapture={triggerCapture} openScreenshot={openScreenshot} />;
+    }
   };
 
 
@@ -206,7 +242,7 @@ export default function App() {
         </header>
 
         {isAllowed ? (
-          pages[page] || pages.dashboard
+          renderPage()
         ) : (
           <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "center", background: "#0f1117", padding: "40px" }}>
             <div style={{ ...S.card, padding: "36px 24px", width: "100%", maxWidth: 440, textAlign: "center", border: "1px solid rgba(239, 68, 68, 0.2)", background: "rgba(19, 21, 31, 0.85)" }}>

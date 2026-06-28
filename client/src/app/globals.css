@@ -111,7 +111,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 }
 @media (min-width: 1024px) {
   .metrics-container {
-    padding: 40px 40px 40px 40px !important;
+    padding: 23px 40px 40px 40px !important;
     padding-top: 64px !important;
   }
 }

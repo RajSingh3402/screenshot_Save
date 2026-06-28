@@ -172,19 +172,31 @@ export function UserManagement() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ width: "100%" }}>
-      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-10 mb-6">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Users Management</h1>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Manage monitor portal access, user roles, and security credentials</p>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 12 }}>Manage monitor portal access, user roles, and security credentials</p>
         </div>
         <button onClick={() => { setShowModal(true); setError(null); }} style={S.btn("#6366f1", "#fff", { alignSelf: "flex-start" })}>+ Add User</button>
       </div>
 
       {/* Filters */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 18 }} className="w-full">
-        <input placeholder="Search users by name or email..." value={search} onChange={e => setSearch(e.target.value)}
-          style={S.input} className="w-full sm:w-[320px]" />
-      </div>
+     <div
+  style={{
+    display: "flex",
+    gap: 10,
+    marginTop: 18, // 👈 Top gap (40px)
+    marginBottom: 18
+  }}
+  className="w-full"
+>
+  <input
+    placeholder="Search users by name or email..."
+    value={search}
+    onChange={e => setSearch(e.target.value)}
+    style={S.input}
+    className="w-full sm:w-[320px]" />
+</div>
 
       {/* Table */}
       <div style={{ ...S.card, overflow: "hidden" }}>

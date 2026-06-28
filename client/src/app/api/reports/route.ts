@@ -16,6 +16,39 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required.' }, { status: 401 });
     }
 
+    // Sync screenshots and reports from server/public to client/public if they exist
+    try {
+      const serverScreenshots = 'c:\\screenshot_project\\server\\public\\screenshots';
+      const clientScreenshots = 'c:\\screenshot_project\\client\\public\\screenshots';
+      const serverReports = 'c:\\screenshot_project\\server\\public\\reports';
+      const clientReports = 'c:\\screenshot_project\\client\\public\\reports';
+
+      const copyFiles = (src: string, dest: string) => {
+        if (fs.existsSync(src)) {
+          if (!fs.existsSync(dest)) {
+            fs.mkdirSync(dest, { recursive: true });
+          }
+          const files = fs.readdirSync(src);
+          for (const file of files) {
+            const srcPath = path.join(src, file);
+            const destPath = path.join(dest, file);
+            if (fs.statSync(srcPath).isFile() && !fs.existsSync(destPath)) {
+              try {
+                fs.copyFileSync(srcPath, destPath);
+              } catch (e) {
+                console.error(`Failed to sync file ${file}:`, e);
+              }
+            }
+          }
+        }
+      };
+
+      copyFiles(serverScreenshots, clientScreenshots);
+      copyFiles(serverReports, clientReports);
+    } catch (syncErr) {
+      console.error('Asset sync error:', syncErr);
+    }
+
     const reports = await prisma.report.findMany({
       orderBy: { id: 'desc' },
       include: {

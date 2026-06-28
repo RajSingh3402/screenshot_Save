@@ -15,6 +15,7 @@ export function SettingsManagement() {
     port: 587,
     username: '',
     password: '',
+    globalCcEmail: '',
   });
 
   // Recipients State
@@ -86,6 +87,7 @@ export function SettingsManagement() {
             port: data.port,
             username: data.username,
             password: data.password || '',
+            globalCcEmail: data.globalCcEmail || '',
           });
         }
       } else {
@@ -411,7 +413,7 @@ export function SettingsManagement() {
     <div className="p-4 sm:p-6 lg:p-8 page-container" style={{ maxWidth: 1000, position: 'relative', display: 'flex', flexDirection: 'column', gap: 24, width: "100%" }}>
       
       {/* Toast Notification Container */}
-      <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 350 }}>
+      <div style={{ position: 'absolute', top: 20, right: 20, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 350 }}>
         {toasts.map(t => (
           <div 
             key={t.id} 
@@ -516,56 +518,84 @@ export function SettingsManagement() {
                     disabled={isSavingSmtp || isTestingConnection}
                   />
                 </div>
-              </form>
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-6">
-              <button 
-                type="button" 
-                onClick={handleSmtpTest}
-                disabled={isTestingConnection || isSavingSmtp}
-                style={S.btn('#1e2130', '#818cf8', { 
-                  flex: 1, 
-                  border: '1px solid #818cf850',
-                  cursor: (isTestingConnection || isSavingSmtp) ? 'not-allowed' : 'pointer',
-                  opacity: (isTestingConnection || isSavingSmtp) ? 0.6 : 1,
-                  padding: '10px 16px'
-                })}
-              >
-                {isTestingConnection ? '🔄 Testing...' : '⚡ Test Connection'}
-              </button>
-              <button 
-                type="button" 
-                onClick={handleSmtpSave}
-                disabled={isSavingSmtp || isTestingConnection}
-                style={S.btn('#6366f1', '#ffffff', { 
-                  flex: 1,
-                  cursor: (isSavingSmtp || isTestingConnection) ? 'not-allowed' : 'pointer',
-                  opacity: (isSavingSmtp || isTestingConnection) ? 0.6 : 1,
-                  padding: '10px 16px'
-                })}
-              >
-                {isSavingSmtp ? '💾 Saving...' : '💾 Save SMTP Config'}
-              </button>
+                <div>
+                  <label style={{ fontSize: 12, color: '#64748b', display: 'block', marginBottom: 5 }}>Global CC Email</label>
+                  <input 
+                    type="email"
+                    value={smtpForm.globalCcEmail || ''} 
+                    onChange={e => setSmtpForm({ ...smtpForm, globalCcEmail: e.target.value })} 
+                    style={S.input} 
+                    placeholder="e.g. manager@company.com"
+                    disabled={isSavingSmtp || isTestingConnection}
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-5 mt-6">
+                  <button 
+                    type="button" 
+                    onClick={handleSmtpTest}
+                    disabled={isTestingConnection || isSavingSmtp}
+                    style={S.btn('#1e2130', '#818cf8', { 
+                      flex: 1, 
+                      border: '1px solid #818cf850',
+                      cursor: (isTestingConnection || isSavingSmtp) ? 'not-allowed' : 'pointer',
+                      opacity: (isTestingConnection || isSavingSmtp) ? 0.6 : 1,
+                      padding: '10px 16px'
+                    })}
+                  >
+                    {isTestingConnection ? '🔄 Testing...' : '⚡ Test Connection'}
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={isSavingSmtp || isTestingConnection}
+                    style={S.btn('#6366f1', '#ffffff', { 
+                      flex: 1,
+                      cursor: (isSavingSmtp || isTestingConnection) ? 'not-allowed' : 'pointer',
+                      opacity: (isSavingSmtp || isTestingConnection) ? 0.6 : 1,
+                      padding: '10px 16px'
+                    })}
+                  >
+                    {isSavingSmtp ? '💾 Saving...' : '💾 Save SMTP Config'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
 
           {/* Quick Metrics Card */}
-          <div style={{ ...S.card, padding: 20, display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Last Execution</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>{lastExecTimeStr}</div>
-            </div>
-            <div style={{ width: 1, height: 40, background: '#1e2130' }} />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Email Status</div>
-              <div>
-                {lastExecStatus === 'success' && badge('#14532d', '#86efac', '● Active')}
-                {lastExecStatus === 'failed' && badge('#450a0a', '#fca5a5', '✗ Failed')}
-                {lastExecStatus === 'None' && badge('#1e2130', '#64748b', 'No Run')}
-              </div>
-            </div>
-          </div>
+         <div
+  style={{
+    ...S.card,
+    padding: 20,
+    marginTop: 20, // 👈 Top gap (40px)
+    display: 'flex',
+    justifyContent: 'space-around',
+    alignItems: 'center'
+  }}
+>
+  <div style={{ textAlign: 'center' }}>
+    <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+      Last Execution
+    </div>
+    <div style={{ fontSize: 14, fontWeight: 700, color: '#f1f5f9' }}>
+      {lastExecTimeStr}
+    </div>
+  </div>
+
+  <div style={{ width: 1, height: 40, background: '#1e2130' }} />
+
+  <div style={{ textAlign: 'center' }}>
+    <div style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+      Email Status
+    </div>
+    <div>
+      {lastExecStatus === 'success' && badge('#14532d', '#86efac', '● Active')}
+      {lastExecStatus === 'failed' && badge('#450a0a', '#fca5a5', '✗ Failed')}
+      {lastExecStatus === 'None' && badge('#1e2130', '#64748b', 'No Run')}
+    </div>
+  </div>
+</div>
 
         </div>
 

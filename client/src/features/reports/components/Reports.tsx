@@ -10,6 +10,37 @@ interface ReportsProps {
 
 export function Reports({ reports, openScreenshot, user, refreshReports }: ReportsProps) {
   const [sel, setSel] = useState<any>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+
+  const downloadPdf = async (reportId: number, filename: string) => {
+    setDownloadingId(reportId);
+    try {
+      const res = await fetch(`/api/reports/${reportId}/pdf`);
+      if (!res.ok) {
+        let errorMsg = "Failed to download PDF report.";
+        try {
+          const data = await res.json();
+          errorMsg = data.error || errorMsg;
+        } catch (_) {}
+        alert(errorMsg);
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || `Report_${reportId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      alert("An error occurred while downloading the PDF report.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const displayDetails = sel?.details || [];
 
@@ -49,7 +80,7 @@ export function Reports({ reports, openScreenshot, user, refreshReports }: Repor
       <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6">
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9" }}>Reports</h1>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>All generated PDF reports · Click a row for details</p>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 8,marginBottom: 18}}>All generated PDF reports · Click a row for details</p>
         </div>
         <div className="flex flex-wrap gap-2 items-center justify-start md:justify-end">
           <button 
@@ -103,7 +134,22 @@ export function Reports({ reports, openScreenshot, user, refreshReports }: Repor
                         </div>
                       </td>
                       <td style={{ padding: "10px 16px", textAlign: "right", whiteSpace: "nowrap" }}>
-                        <button onClick={e => { e.stopPropagation(); window.open(`/api/reports/${r.id}/pdf`, "_blank"); }} style={{ background: "#1e2a4a", color: "#818cf8", border: "1px solid #2d3a5e", borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer" }}>⬇ PDF</button>
+                        <button 
+                          onClick={e => { e.stopPropagation(); downloadPdf(Number(r.id), r.file); }} 
+                          disabled={downloadingId === Number(r.id)}
+                          style={{ 
+                            background: "#1e2a4a", 
+                            color: "#818cf8", 
+                            border: "1px solid #2d3a5e", 
+                            borderRadius: 6, 
+                            padding: "4px 10px", 
+                            fontSize: 11, 
+                            cursor: downloadingId === Number(r.id) ? "not-allowed" : "pointer",
+                            opacity: downloadingId === Number(r.id) ? 0.7 : 1
+                          }}
+                        >
+                          {downloadingId === Number(r.id) ? "⏳..." : "⬇ PDF"}
+                        </button>
                       </td>
                     </tr>
                   );
@@ -166,7 +212,19 @@ export function Reports({ reports, openScreenshot, user, refreshReports }: Repor
               <div style={{ fontSize: 12, color: "#818cf8", wordBreak: "break-all" }}>{sel.file}</div>
             </div>
 
-            <button onClick={() => window.open(`/api/reports/${sel.id}/pdf`, "_blank")} style={{ ...S.btn("#6366f1", "#fff"), width: "100%", padding: 10 }}>⬇ Download PDF Report</button>
+            <button 
+              onClick={() => downloadPdf(Number(sel.id), sel.file)} 
+              disabled={downloadingId === Number(sel.id)}
+              style={{ 
+                ...S.btn("#6366f1", "#fff"), 
+                width: "100%", 
+                padding: 10,
+                opacity: downloadingId === Number(sel.id) ? 0.7 : 1,
+                cursor: downloadingId === Number(sel.id) ? "not-allowed" : "pointer"
+              }}
+            >
+              {downloadingId === Number(sel.id) ? "⏳ Downloading..." : "⬇ Download PDF Report"}
+            </button>
           </div>
         )}
       </div>

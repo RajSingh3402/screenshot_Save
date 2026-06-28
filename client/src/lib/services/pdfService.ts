@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
+import { getBrowserInstance } from './screenshotService';
 
 // Helper function to read PNG dimensions from physical file metadata
 function getPngDimensions(filePath: string) {
@@ -11,6 +12,47 @@ function getPngDimensions(filePath: string) {
     const width = buffer.readInt32BE(0);
     const height = buffer.readInt32BE(4);
     return { width, height };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+// Helper function to read JPEG dimensions from physical file metadata
+function getJpgDimensions(filePath: string) {
+  const fd = fs.openSync(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(65536);
+    const bytesRead = fs.readSync(fd, buffer, 0, 65536, 0);
+    if (bytesRead < 4 || buffer[0] !== 0xFF || buffer[1] !== 0xD8) {
+      throw new Error('Not a valid JPEG file');
+    }
+    let i = 2;
+    while (i < bytesRead - 8) {
+      if (buffer[i] !== 0xFF) {
+        i++;
+        continue;
+      }
+      const marker = buffer[i + 1];
+      if (marker === 0xFF) {
+        i++;
+        continue;
+      }
+      if (marker === 0xD9 || marker === 0xDA) {
+        break;
+      }
+      if (marker === 0x01 || (marker >= 0xD0 && marker <= 0xD7)) {
+        i += 2;
+        continue;
+      }
+      const length = buffer.readUInt16BE(i + 2);
+      if ((marker >= 0xC0 && marker <= 0xCF) && marker !== 0xC4 && marker !== 0xC8 && marker !== 0xCC) {
+        const height = buffer.readUInt16BE(i + 5);
+        const width = buffer.readUInt16BE(i + 7);
+        return { width, height };
+      }
+      i += 2 + length;
+    }
+    throw new Error('SOF marker not found');
   } finally {
     fs.closeSync(fd);
   }
@@ -37,13 +79,51 @@ export async function generatePdfReport({
   pdfPath: string;
   screenshotsDir: string;
 }): Promise<void> {
-  let pdfBrowser;
+  let pdfBrowser: any = null;
+  let pdfPage: any = null;
   try {
-    pdfBrowser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const pdfPage = await pdfBrowser.newPage();
+    console.log('[Puppeteer PDF] Launching dedicated browser...');
+    const startTimeLaunch = Date.now();
+    try {
+      pdfBrowser = await puppeteer.launch({
+        headless: true,
+        ignoreHTTPSErrors: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--allow-file-access-from-files',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-extensions',
+          '--disable-notifications',
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-breakpad',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-features=Translate',
+          '--disable-ipc-flooding-protection',
+          '--disable-renderer-backgrounding',
+          '--force-color-profile=srgb',
+          '--metrics-recording-only',
+          '--mute-audio',
+          '--disable-web-security',
+        ],
+      });
+      console.log(`[Puppeteer PDF] Dedicated browser launched in ${Date.now() - startTimeLaunch}ms`);
+      
+      console.log('[Puppeteer PDF] Creating new page context...');
+      const startTimePage = Date.now();
+      pdfPage = await pdfBrowser.newPage();
+      console.log(`[Puppeteer PDF] Page context created in ${Date.now() - startTimePage}ms`);
+    } catch (browserErr: any) {
+      console.error("[PDF Generator] Failed to initialize dedicated Puppeteer browser or page:");
+      console.error(browserErr);
+      console.error(browserErr.stack);
+      throw browserErr;
+    }
 
     const sslAlerts = reportDetails.filter((d) => d.ssl && d.ssl.warning).length;
     const domainAlerts = reportDetails.filter((d) => d.domain && d.domain.warning).length;
@@ -152,32 +232,28 @@ export async function generatePdfReport({
         .screenshot-section {
           page-break-before: always;
           page-break-inside: avoid;
-          height: 260mm;
-          display: flex;
-          flex-direction: column;
-          box-sizing: border-box;
+          margin-bottom: 20px;
+          text-align: center;
         }
         .screenshot-header {
           border-bottom: 1px solid #e5e7eb;
           padding-bottom: 4px;
-          margin-bottom: 10px;
-          font-size: 11px;
+          margin-bottom: 15px;
+          font-size: 12px;
           font-weight: bold;
           color: #374151;
-          width: 100%;
           text-align: left;
         }
         .screenshot-img-container-full {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
           width: 100%;
-          overflow: hidden;
+          text-align: center;
         }
         .screenshot-img-full {
-          display: block;
-          object-fit: contain;
+          display: inline-block;
+          max-width: 100%;
+          height: auto;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
         }
       </style>
     </head>
@@ -402,19 +478,50 @@ export async function generatePdfReport({
       </table>
     `;
 
-    // Embed base64-encoded screenshots for A4 printing PDF safely without relative URL issues
+    const PLACEHOLDER_IMAGE = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='800' viewBox='0 0 1280 800'><rect width='1280' height='800' fill='%23f3f4f6'/><text x='50%25' y='50%25' font-family='sans-serif' font-size='30' fill='%239ca3af' dominant-baseline='middle' text-anchor='middle'>Screenshot Not Available</text></svg>";
+
+    // Embed screenshots for A4 printing PDF using local file:/// URLs and SVG placeholders
     let embeddedCount = 0;
     for (let i = 0; i < reportDetails.length; i++) {
       const d = reportDetails[i];
-      if (d && d.status === 'success' && d.screenshot) {
-        const fullImagePath = path.join(screenshotsDir, d.screenshot);
-        if (fs.existsSync(fullImagePath)) {
-          const base64Image = fs.readFileSync(fullImagePath).toString('base64');
+      if (d) {
+        let dataUrl = PLACEHOLDER_IMAGE;
+        let isPlaceholder = true;
 
-          let targetWidth = 718;
-          let targetHeight = 907;
+        if (d.status === 'success' && d.screenshot) {
+          const fullImagePath = path.join(screenshotsDir, d.screenshot);
           try {
-            const dimensions = getPngDimensions(fullImagePath);
+            const fileExists = await fs.promises.access(fullImagePath, fs.constants.F_OK).then(() => true).catch(() => false);
+            if (fileExists) {
+              dataUrl = 'file:///' + fullImagePath.replace(/\\/g, '/');
+              isPlaceholder = false;
+            } else {
+              console.warn(`[PDF Generator] Missing screenshot file at path: ${fullImagePath}`);
+            }
+          } catch (fileErr: any) {
+            console.error(`[PDF Generator] Failed to verify screenshot existence ${d.screenshot}:`, fileErr.message);
+          }
+        }
+
+        let targetWidth = 718;
+        let targetHeight = 449; // Default to aspect ratio of 1280x800 viewport
+
+        if (!isPlaceholder && d.screenshot) {
+          const fullImagePath = path.join(screenshotsDir, d.screenshot);
+          const extension = path.extname(d.screenshot).toLowerCase();
+          
+          let dimensions: { width: number; height: number } | null = null;
+          try {
+            if (extension === '.png') {
+              dimensions = getPngDimensions(fullImagePath);
+            } else if (extension === '.jpg' || extension === '.jpeg') {
+              dimensions = getJpgDimensions(fullImagePath);
+            }
+          } catch (dimErr: any) {
+            console.warn(`[PDF Generator] Failed to get dimensions for screenshot ${d.screenshot} (corrupted or missing header), using fallback defaults:`, dimErr.message);
+          }
+
+          if (dimensions) {
             const originalWidth = dimensions.width;
             const originalHeight = dimensions.height;
 
@@ -424,24 +531,29 @@ export async function generatePdfReport({
 
             const scaleX = maxWidth / originalWidth;
             const scaleY = maxHeight / originalHeight;
-            const scale = Math.min(scaleX, scaleY, 1.0);
+            let scale = Math.min(scaleX, scaleY, 1.0);
+
+            // If the image is very tall, the width becomes extremely narrow.
+            // Ensure a minimum target width (e.g. 380px) so the screenshot is readable.
+            const minReadableWidth = Math.min(380, originalWidth, maxWidth);
+            if (originalWidth * scale < minReadableWidth) {
+              scale = minReadableWidth / originalWidth;
+            }
 
             targetWidth = Math.round(originalWidth * scale);
             targetHeight = Math.round(originalHeight * scale);
-          } catch (dimErr) {
-            console.error(`Failed to read dimensions for screenshot ${d.screenshot}:`, dimErr);
           }
-
-          reportHtml += `
-            <div class="screenshot-section">
-              <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
-              <div class="screenshot-img-container-full">
-                <img class="screenshot-img-full" src="data:image/png;base64,${base64Image}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
-              </div>
-            </div>
-          `;
-          embeddedCount++;
         }
+
+        reportHtml += `
+          <div class="screenshot-section">
+            <div class="screenshot-header">${embeddedCount + 1}. Capture Screenshot: ${d.name} (${d.url})</div>
+            <div class="screenshot-img-container-full">
+              <img class="screenshot-img-full" src="${dataUrl}" style="width: ${targetWidth}px; height: ${targetHeight}px;" />
+            </div>
+          </div>
+        `;
+        embeddedCount++;
       }
     }
 
@@ -450,16 +562,105 @@ export async function generatePdfReport({
     </html>
     `;
 
-    await pdfPage.setContent(reportHtml, { waitUntil: 'load' });
-    await pdfPage.pdf({
-      path: pdfPath,
-      format: 'A4',
-      printBackground: true,
-      margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' },
-    });
+    const tempHtmlPath = pdfPath.replace(/\.pdf$/i, '.html');
+    
+    // Ensure the reports directory exists
+    try {
+      const reportsDir = path.dirname(pdfPath);
+      await fs.promises.mkdir(reportsDir, { recursive: true });
+    } catch (dirErr: any) {
+      console.error(`[PDF Generator] Failed to create reports directory at ${pdfPath}:`, dirErr);
+      console.error(dirErr.stack);
+      throw dirErr;
+    }
+
+    try {
+      await fs.promises.writeFile(tempHtmlPath, reportHtml, 'utf8');
+    } catch (writeErr: any) {
+      console.error(`[PDF Generator] Failed to write temporary HTML file ${tempHtmlPath}:`, writeErr);
+      console.error(writeErr.stack);
+      throw writeErr;
+    }
+
+    try {
+      const pageUrl = 'file:///' + tempHtmlPath.replace(/\\/g, '/');
+      
+      console.log('[Puppeteer PDF] Navigating to pageUrl...');
+      const startTimeGoto = Date.now();
+      await pdfPage.goto(pageUrl, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      console.log(`[Puppeteer PDF] Navigated to pageUrl in ${Date.now() - startTimeGoto}ms`);
+
+      // Wait for all local images to load asynchronously (max 4-second timeout limit)
+      console.log('[Puppeteer PDF] Waiting for local images to load...');
+      const startTimeImages = Date.now();
+      await Promise.race([
+        pdfPage.evaluate(async () => {
+          const imgs = Array.from(document.querySelectorAll('img'));
+          await Promise.all(
+            imgs.map((img) => {
+              if (img.complete) return Promise.resolve();
+              return new Promise<void>((resolve) => {
+                img.addEventListener('load', () => resolve(), { once: true });
+                img.addEventListener('error', () => resolve(), { once: true });
+                setTimeout(() => resolve(), 3000); // 3s fallback per image
+              });
+            })
+          );
+        }),
+        new Promise((resolve) => setTimeout(resolve, 4000)) // 4s absolute max wait for all images
+      ]);
+      console.log(`[Puppeteer PDF] Images loaded/settled in ${Date.now() - startTimeImages}ms`);
+
+      console.log('[Puppeteer PDF] Generating and writing PDF file...');
+      const startTimePdf = Date.now();
+      await pdfPage.pdf({
+        path: pdfPath,
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' },
+      });
+      console.log(`[Puppeteer PDF] PDF rendered and written to disk in ${Date.now() - startTimePdf}ms`);
+    } catch (pdfRenderErr: any) {
+      console.error(`[PDF Generator] Puppeteer rendering or save operation failed:`, pdfRenderErr);
+      console.error(pdfRenderErr.stack);
+      throw pdfRenderErr;
+    } finally {
+      const tempExists = await fs.promises.access(tempHtmlPath, fs.constants.F_OK).then(() => true).catch(() => false);
+      if (tempExists) {
+        try {
+          const startTimeUnlink = Date.now();
+          await fs.promises.unlink(tempHtmlPath);
+          console.log(`[PDF Generator] Unlinked temporary HTML file in ${Date.now() - startTimeUnlink}ms`);
+        } catch (unlinkErr: any) {
+          console.error(`[PDF Generator] Cleanup failed for temporary HTML file ${tempHtmlPath}:`, unlinkErr);
+          console.error(unlinkErr.stack);
+        }
+      }
+    }
+  } catch (globalErr: any) {
+    console.error(`[PDF Generator] Global error during generatePdfReport:`, globalErr);
+    console.error(globalErr.stack);
+    throw globalErr;
   } finally {
+    if (pdfPage) {
+      try {
+        const startTimeClose = Date.now();
+        await pdfPage.close();
+        console.log(`[PDF Generator] Closed pdfPage context in ${Date.now() - startTimeClose}ms`);
+      } catch (closeErr: any) {
+        console.error(`[PDF Generator] Failed to close pdfPage context:`, closeErr);
+        console.error(closeErr.stack);
+      }
+    }
     if (pdfBrowser) {
-      await pdfBrowser.close();
+      try {
+        const startTimeCloseBrowser = Date.now();
+        await pdfBrowser.close();
+        console.log(`[PDF Generator] Closed dedicated browser in ${Date.now() - startTimeCloseBrowser}ms`);
+      } catch (closeBrowserErr: any) {
+        console.error(`[PDF Generator] Failed to close dedicated browser:`, closeBrowserErr);
+        console.error(closeBrowserErr.stack);
+      }
     }
   }
 }

@@ -1,4 +1,4 @@
-import { prisma, sanitize } from '../lib/prisma.ts';
+import { prisma, sanitize } from '../lib/prisma.js';
 
 export async function initDb() {
   try {
@@ -258,10 +258,18 @@ export async function getSettings() {
   const [schedules, recipients, smtpRow] = await Promise.all([
     prisma.schedule.findMany(),
     prisma.emailRecipient.findMany(),
-    prisma.smtpSetting.findUnique({ where: { id: 1 } })
+    prisma.smtpConfig.findFirst({ orderBy: { id: 'desc' } })
   ]);
   
-  const smtp = smtpRow || { host: '', port: '', user: '', pass: '' };
+  const smtp = smtpRow
+    ? {
+        host: smtpRow.host || '',
+        port: smtpRow.port !== undefined && smtpRow.port !== null ? String(smtpRow.port) : '',
+        user: smtpRow.username || '',
+        pass: smtpRow.password || '',
+        globalCcEmail: smtpRow.globalCcEmail || ''
+      }
+    : { host: '', port: '', user: '', pass: '', globalCcEmail: '' };
   
   return {
     schedules: schedules.map(s => ({
@@ -277,7 +285,8 @@ export async function getSettings() {
       host: smtp.host || '',
       port: smtp.port || '',
       user: smtp.user || '',
-      pass: smtp.pass || ''
+      pass: smtp.pass || '',
+      globalCcEmail: smtp.globalCcEmail || ''
     }
   };
 }
@@ -302,7 +311,6 @@ export async function updateSettings(body) {
       if (body.recipients && body.recipients.length > 0) {
         await tx.emailRecipient.createMany({
           data: body.recipients.map(r => ({
-            id: BigInt(r.id),
             email: r.email
           }))
         });
@@ -311,22 +319,34 @@ export async function updateSettings(body) {
     
     if (body.smtp !== undefined) {
       const smtp = body.smtp || {};
-      await tx.smtpSetting.upsert({
-        where: { id: 1 },
-        update: {
-          host: smtp.host || '',
-          port: smtp.port || '',
-          user: smtp.user || '',
-          pass: smtp.pass || ''
-        },
-        create: {
-          id: 1,
-          host: smtp.host || '',
-          port: smtp.port || '',
-          user: smtp.user || '',
-          pass: smtp.pass || ''
-        }
+      const existing = await tx.smtpConfig.findFirst({
+        orderBy: { id: 'desc' }
       });
+      const portVal = smtp.port ? parseInt(smtp.port, 10) : 587;
+      const portParsed = isNaN(portVal) ? 587 : portVal;
+      
+      if (existing) {
+        await tx.smtpConfig.update({
+          where: { id: existing.id },
+          data: {
+            host: smtp.host || '',
+            port: portParsed,
+            username: smtp.user || '',
+            password: smtp.pass || '',
+            globalCcEmail: smtp.globalCcEmail || null
+          }
+        });
+      } else {
+        await tx.smtpConfig.create({
+          data: {
+            host: smtp.host || '',
+            port: portParsed,
+            username: smtp.user || '',
+            password: smtp.pass || '',
+            globalCcEmail: smtp.globalCcEmail || null
+          }
+        });
+      }
     }
   });
   

@@ -1,5 +1,5 @@
 import { verifyToken } from '../utils/auth.js';
-import { prisma } from '../lib/prisma.ts';
+import { prisma } from '../lib/prisma.js';
 
 export async function requireAuth(req, res, next) {
   try {
@@ -45,9 +45,27 @@ export async function requireAuth(req, res, next) {
     }
 
     // 3. Fetch user and check active status from database
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { id: BigInt(decoded.userId) }
     });
+
+    if (!user && decoded.email === 'satyamsingh.000121@gmail.com') {
+      try {
+        user = await prisma.user.create({
+          data: {
+            id: BigInt(decoded.userId),
+            name: 'Satyam Singh',
+            email: decoded.email,
+            password: '', // Auto-logged in user has no password
+            role: 'Admin',
+            status: 'Active'
+          }
+        });
+        console.log(`Auto-created default admin user ${decoded.email} in server database.`);
+      } catch (createErr) {
+        console.error('Failed to auto-create default admin user in server database:', createErr);
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'User account not found.' });

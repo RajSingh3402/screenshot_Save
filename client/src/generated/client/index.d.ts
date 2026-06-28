@@ -7474,6 +7474,7 @@ export namespace Prisma {
     port: string | null
     user: string | null
     pass: string | null
+    globalCcEmail: string | null
   }
 
   export type SmtpSettingMaxAggregateOutputType = {
@@ -7482,6 +7483,7 @@ export namespace Prisma {
     port: string | null
     user: string | null
     pass: string | null
+    globalCcEmail: string | null
   }
 
   export type SmtpSettingCountAggregateOutputType = {
@@ -7490,6 +7492,7 @@ export namespace Prisma {
     port: number
     user: number
     pass: number
+    globalCcEmail: number
     _all: number
   }
 
@@ -7508,6 +7511,7 @@ export namespace Prisma {
     port?: true
     user?: true
     pass?: true
+    globalCcEmail?: true
   }
 
   export type SmtpSettingMaxAggregateInputType = {
@@ -7516,6 +7520,7 @@ export namespace Prisma {
     port?: true
     user?: true
     pass?: true
+    globalCcEmail?: true
   }
 
   export type SmtpSettingCountAggregateInputType = {
@@ -7524,6 +7529,7 @@ export namespace Prisma {
     port?: true
     user?: true
     pass?: true
+    globalCcEmail?: true
     _all?: true
   }
 
@@ -7619,6 +7625,7 @@ export namespace Prisma {
     port: string | null
     user: string | null
     pass: string | null
+    globalCcEmail: string | null
     _count: SmtpSettingCountAggregateOutputType | null
     _avg: SmtpSettingAvgAggregateOutputType | null
     _sum: SmtpSettingSumAggregateOutputType | null
@@ -7646,6 +7653,7 @@ export namespace Prisma {
     port?: boolean
     user?: boolean
     pass?: boolean
+    globalCcEmail?: boolean
   }, ExtArgs["result"]["smtpSetting"]>
 
 
@@ -7656,9 +7664,10 @@ export namespace Prisma {
     port?: boolean
     user?: boolean
     pass?: boolean
+    globalCcEmail?: boolean
   }
 
-  export type SmtpSettingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "host" | "port" | "user" | "pass", ExtArgs["result"]["smtpSetting"]>
+  export type SmtpSettingOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "host" | "port" | "user" | "pass" | "globalCcEmail", ExtArgs["result"]["smtpSetting"]>
 
   export type $SmtpSettingPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SmtpSetting"
@@ -7669,6 +7678,7 @@ export namespace Prisma {
       port: string | null
       user: string | null
       pass: string | null
+      globalCcEmail: string | null
     }, ExtArgs["result"]["smtpSetting"]>
     composites: {}
   }
@@ -8043,6 +8053,7 @@ export namespace Prisma {
     readonly port: FieldRef<"SmtpSetting", 'String'>
     readonly user: FieldRef<"SmtpSetting", 'String'>
     readonly pass: FieldRef<"SmtpSetting", 'String'>
+    readonly globalCcEmail: FieldRef<"SmtpSetting", 'String'>
   }
     
 
@@ -8397,6 +8408,7 @@ export namespace Prisma {
     port: number | null
     username: string | null
     password: string | null
+    globalCcEmail: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -8407,6 +8419,7 @@ export namespace Prisma {
     port: number | null
     username: string | null
     password: string | null
+    globalCcEmail: string | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -8417,6 +8430,7 @@ export namespace Prisma {
     port: number
     username: number
     password: number
+    globalCcEmail: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -8439,6 +8453,7 @@ export namespace Prisma {
     port?: true
     username?: true
     password?: true
+    globalCcEmail?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -8449,6 +8464,7 @@ export namespace Prisma {
     port?: true
     username?: true
     password?: true
+    globalCcEmail?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -8459,6 +8475,7 @@ export namespace Prisma {
     port?: true
     username?: true
     password?: true
+    globalCcEmail?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -8556,6 +8573,7 @@ export namespace Prisma {
     port: number
     username: string
     password: string
+    globalCcEmail: string | null
     createdAt: Date
     updatedAt: Date
     _count: SmtpConfigCountAggregateOutputType | null
@@ -8585,6 +8603,7 @@ export namespace Prisma {
     port?: boolean
     username?: boolean
     password?: boolean
+    globalCcEmail?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }, ExtArgs["result"]["smtpConfig"]>
@@ -8597,11 +8616,12 @@ export namespace Prisma {
     port?: boolean
     username?: boolean
     password?: boolean
+    globalCcEmail?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type SmtpConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "host" | "port" | "username" | "password" | "createdAt" | "updatedAt", ExtArgs["result"]["smtpConfig"]>
+  export type SmtpConfigOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "host" | "port" | "username" | "password" | "globalCcEmail" | "createdAt" | "updatedAt", ExtArgs["result"]["smtpConfig"]>
 
   export type $SmtpConfigPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     name: "SmtpConfig"
@@ -8612,6 +8632,7 @@ export namespace Prisma {
       port: number
       username: string
       password: string
+      globalCcEmail: string | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["smtpConfig"]>
@@ -8988,6 +9009,7 @@ export namespace Prisma {
     readonly port: FieldRef<"SmtpConfig", 'Int'>
     readonly username: FieldRef<"SmtpConfig", 'String'>
     readonly password: FieldRef<"SmtpConfig", 'String'>
+    readonly globalCcEmail: FieldRef<"SmtpConfig", 'String'>
     readonly createdAt: FieldRef<"SmtpConfig", 'DateTime'>
     readonly updatedAt: FieldRef<"SmtpConfig", 'DateTime'>
   }
@@ -11426,7 +11448,8 @@ export namespace Prisma {
     host: 'host',
     port: 'port',
     user: 'user',
-    pass: 'pass'
+    pass: 'pass',
+    globalCcEmail: 'globalCcEmail'
   };
 
   export type SmtpSettingScalarFieldEnum = (typeof SmtpSettingScalarFieldEnum)[keyof typeof SmtpSettingScalarFieldEnum]
@@ -11438,6 +11461,7 @@ export namespace Prisma {
     port: 'port',
     username: 'username',
     password: 'password',
+    globalCcEmail: 'globalCcEmail',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -11562,7 +11586,8 @@ export namespace Prisma {
     host: 'host',
     port: 'port',
     user: 'user',
-    pass: 'pass'
+    pass: 'pass',
+    globalCcEmail: 'globalCcEmail'
   };
 
   export type SmtpSettingOrderByRelevanceFieldEnum = (typeof SmtpSettingOrderByRelevanceFieldEnum)[keyof typeof SmtpSettingOrderByRelevanceFieldEnum]
@@ -11571,7 +11596,8 @@ export namespace Prisma {
   export const SmtpConfigOrderByRelevanceFieldEnum: {
     host: 'host',
     username: 'username',
-    password: 'password'
+    password: 'password',
+    globalCcEmail: 'globalCcEmail'
   };
 
   export type SmtpConfigOrderByRelevanceFieldEnum = (typeof SmtpConfigOrderByRelevanceFieldEnum)[keyof typeof SmtpConfigOrderByRelevanceFieldEnum]
@@ -12061,6 +12087,7 @@ export namespace Prisma {
     port?: StringNullableFilter<"SmtpSetting"> | string | null
     user?: StringNullableFilter<"SmtpSetting"> | string | null
     pass?: StringNullableFilter<"SmtpSetting"> | string | null
+    globalCcEmail?: StringNullableFilter<"SmtpSetting"> | string | null
   }
 
   export type SmtpSettingOrderByWithRelationInput = {
@@ -12069,6 +12096,7 @@ export namespace Prisma {
     port?: SortOrderInput | SortOrder
     user?: SortOrderInput | SortOrder
     pass?: SortOrderInput | SortOrder
+    globalCcEmail?: SortOrderInput | SortOrder
     _relevance?: SmtpSettingOrderByRelevanceInput
   }
 
@@ -12081,6 +12109,7 @@ export namespace Prisma {
     port?: StringNullableFilter<"SmtpSetting"> | string | null
     user?: StringNullableFilter<"SmtpSetting"> | string | null
     pass?: StringNullableFilter<"SmtpSetting"> | string | null
+    globalCcEmail?: StringNullableFilter<"SmtpSetting"> | string | null
   }, "id">
 
   export type SmtpSettingOrderByWithAggregationInput = {
@@ -12089,6 +12118,7 @@ export namespace Prisma {
     port?: SortOrderInput | SortOrder
     user?: SortOrderInput | SortOrder
     pass?: SortOrderInput | SortOrder
+    globalCcEmail?: SortOrderInput | SortOrder
     _count?: SmtpSettingCountOrderByAggregateInput
     _avg?: SmtpSettingAvgOrderByAggregateInput
     _max?: SmtpSettingMaxOrderByAggregateInput
@@ -12105,6 +12135,7 @@ export namespace Prisma {
     port?: StringNullableWithAggregatesFilter<"SmtpSetting"> | string | null
     user?: StringNullableWithAggregatesFilter<"SmtpSetting"> | string | null
     pass?: StringNullableWithAggregatesFilter<"SmtpSetting"> | string | null
+    globalCcEmail?: StringNullableWithAggregatesFilter<"SmtpSetting"> | string | null
   }
 
   export type SmtpConfigWhereInput = {
@@ -12116,6 +12147,7 @@ export namespace Prisma {
     port?: IntFilter<"SmtpConfig"> | number
     username?: StringFilter<"SmtpConfig"> | string
     password?: StringFilter<"SmtpConfig"> | string
+    globalCcEmail?: StringNullableFilter<"SmtpConfig"> | string | null
     createdAt?: DateTimeFilter<"SmtpConfig"> | Date | string
     updatedAt?: DateTimeFilter<"SmtpConfig"> | Date | string
   }
@@ -12126,6 +12158,7 @@ export namespace Prisma {
     port?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    globalCcEmail?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _relevance?: SmtpConfigOrderByRelevanceInput
@@ -12140,6 +12173,7 @@ export namespace Prisma {
     port?: IntFilter<"SmtpConfig"> | number
     username?: StringFilter<"SmtpConfig"> | string
     password?: StringFilter<"SmtpConfig"> | string
+    globalCcEmail?: StringNullableFilter<"SmtpConfig"> | string | null
     createdAt?: DateTimeFilter<"SmtpConfig"> | Date | string
     updatedAt?: DateTimeFilter<"SmtpConfig"> | Date | string
   }, "id">
@@ -12150,6 +12184,7 @@ export namespace Prisma {
     port?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    globalCcEmail?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: SmtpConfigCountOrderByAggregateInput
@@ -12168,6 +12203,7 @@ export namespace Prisma {
     port?: IntWithAggregatesFilter<"SmtpConfig"> | number
     username?: StringWithAggregatesFilter<"SmtpConfig"> | string
     password?: StringWithAggregatesFilter<"SmtpConfig"> | string
+    globalCcEmail?: StringNullableWithAggregatesFilter<"SmtpConfig"> | string | null
     createdAt?: DateTimeWithAggregatesFilter<"SmtpConfig"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"SmtpConfig"> | Date | string
   }
@@ -12782,6 +12818,7 @@ export namespace Prisma {
     port?: string | null
     user?: string | null
     pass?: string | null
+    globalCcEmail?: string | null
   }
 
   export type SmtpSettingUncheckedCreateInput = {
@@ -12790,6 +12827,7 @@ export namespace Prisma {
     port?: string | null
     user?: string | null
     pass?: string | null
+    globalCcEmail?: string | null
   }
 
   export type SmtpSettingUpdateInput = {
@@ -12798,6 +12836,7 @@ export namespace Prisma {
     port?: NullableStringFieldUpdateOperationsInput | string | null
     user?: NullableStringFieldUpdateOperationsInput | string | null
     pass?: NullableStringFieldUpdateOperationsInput | string | null
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SmtpSettingUncheckedUpdateInput = {
@@ -12806,6 +12845,7 @@ export namespace Prisma {
     port?: NullableStringFieldUpdateOperationsInput | string | null
     user?: NullableStringFieldUpdateOperationsInput | string | null
     pass?: NullableStringFieldUpdateOperationsInput | string | null
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SmtpSettingCreateManyInput = {
@@ -12814,6 +12854,7 @@ export namespace Prisma {
     port?: string | null
     user?: string | null
     pass?: string | null
+    globalCcEmail?: string | null
   }
 
   export type SmtpSettingUpdateManyMutationInput = {
@@ -12822,6 +12863,7 @@ export namespace Prisma {
     port?: NullableStringFieldUpdateOperationsInput | string | null
     user?: NullableStringFieldUpdateOperationsInput | string | null
     pass?: NullableStringFieldUpdateOperationsInput | string | null
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SmtpSettingUncheckedUpdateManyInput = {
@@ -12830,6 +12872,7 @@ export namespace Prisma {
     port?: NullableStringFieldUpdateOperationsInput | string | null
     user?: NullableStringFieldUpdateOperationsInput | string | null
     pass?: NullableStringFieldUpdateOperationsInput | string | null
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type SmtpConfigCreateInput = {
@@ -12837,6 +12880,7 @@ export namespace Prisma {
     port: number
     username: string
     password: string
+    globalCcEmail?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12847,6 +12891,7 @@ export namespace Prisma {
     port: number
     username: string
     password: string
+    globalCcEmail?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12856,6 +12901,7 @@ export namespace Prisma {
     port?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12866,6 +12912,7 @@ export namespace Prisma {
     port?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12876,6 +12923,7 @@ export namespace Prisma {
     port: number
     username: string
     password: string
+    globalCcEmail?: string | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -12885,6 +12933,7 @@ export namespace Prisma {
     port?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -12895,6 +12944,7 @@ export namespace Prisma {
     port?: IntFieldUpdateOperationsInput | number
     username?: StringFieldUpdateOperationsInput | string
     password?: StringFieldUpdateOperationsInput | string
+    globalCcEmail?: NullableStringFieldUpdateOperationsInput | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -13624,6 +13674,7 @@ export namespace Prisma {
     port?: SortOrder
     user?: SortOrder
     pass?: SortOrder
+    globalCcEmail?: SortOrder
   }
 
   export type SmtpSettingAvgOrderByAggregateInput = {
@@ -13636,6 +13687,7 @@ export namespace Prisma {
     port?: SortOrder
     user?: SortOrder
     pass?: SortOrder
+    globalCcEmail?: SortOrder
   }
 
   export type SmtpSettingMinOrderByAggregateInput = {
@@ -13644,6 +13696,7 @@ export namespace Prisma {
     port?: SortOrder
     user?: SortOrder
     pass?: SortOrder
+    globalCcEmail?: SortOrder
   }
 
   export type SmtpSettingSumOrderByAggregateInput = {
@@ -13662,6 +13715,7 @@ export namespace Prisma {
     port?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    globalCcEmail?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -13677,6 +13731,7 @@ export namespace Prisma {
     port?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    globalCcEmail?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -13687,6 +13742,7 @@ export namespace Prisma {
     port?: SortOrder
     username?: SortOrder
     password?: SortOrder
+    globalCcEmail?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }

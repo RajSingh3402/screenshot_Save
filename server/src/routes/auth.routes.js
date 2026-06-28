@@ -1,5 +1,5 @@
 import express from 'express';
-import { prisma } from '../lib/prisma.ts';
+import { prisma } from '../lib/prisma.js';
 import { comparePassword, signToken } from '../utils/auth.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 

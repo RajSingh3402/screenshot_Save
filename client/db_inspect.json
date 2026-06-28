@@ -1,0 +1,56 @@
+{
+  "websites": [
+    {
+      "id": "1782383355519",
+      "name": "defvf",
+      "url": "https://chatgpt.com",
+      "alertEmail": "satyamsingh.000121@gmail.com",
+      "emailStatus": "📧 Sent",
+      "domainEmailStatus": "No Alert"
+    }
+  ],
+  "latestMetrics": [
+    {
+      "websiteId": "1782383355519",
+      "name": "defvf",
+      "timestamp": "2026-06-25T10:31:21.795Z",
+      "domainDaysRemaining": 159,
+      "domainWarning": false,
+      "sslWarning": true
+    },
+    {
+      "websiteId": "1782381548555",
+      "name": "ddrajjjj",
+      "timestamp": "2026-06-25T10:09:22.953Z",
+      "domainDaysRemaining": 159,
+      "domainWarning": true,
+      "sslWarning": true
+    }
+  ],
+  "recentMetrics": [
+    {
+      "id": 166,
+      "websiteId": "1782383355519",
+      "name": "defvf",
+      "timestamp": "2026-06-25T10:31:21.795Z",
+      "domainDaysRemaining": 159,
+      "domainWarning": false
+    },
+    {
+      "id": 165,
+      "websiteId": "1782381548555",
+      "name": "ddrajjjj",
+      "timestamp": "2026-06-25T10:09:22.953Z",
+      "domainDaysRemaining": 159,
+      "domainWarning": true
+    },
+    {
+      "id": 164,
+      "websiteId": "1782381548555",
+      "name": "ddrajjjj",
+      "timestamp": "2026-06-25T10:00:20.122Z",
+      "domainDaysRemaining": 159,
+      "domainWarning": false
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import * as dbService from '../services/db.service.js';
-import { reportsDir } from '../services/capture.service.js';
+import { reportsDir, generatePdfReport, screenshotsDir } from '../services/capture.service.js';
 
 export async function getReports(req, res) {
   try {
@@ -21,12 +21,45 @@ export async function getReportPdf(req, res) {
     }
     const filePath = path.join(reportsDir, report.file);
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ error: 'Report file not found on disk' });
+      console.log(`[On-Demand PDF] Generating PDF report for ID: ${report.id} since it is missing on disk.`);
+      
+      // Map database details to the structure expected by generatePdfReport
+      const reportDetails = report.details.map((d) => ({
+        id: d.id,
+        name: d.name,
+        url: d.url,
+        status: d.status,
+        loadTime: d.loadTime,
+        error: d.error,
+        screenshot: d.screenshot,
+        // Fallback default values
+        ssl: { status: 'Secure', expiryDate: null, daysRemaining: null, warning: false },
+        domain: { expiryDate: null, daysRemaining: null, warning: false },
+        malware: { safeBrowsingStatus: 'Safe', malwareStatus: 'Clean', phishingStatus: 'Clean', blacklistStatus: 'Clean' }
+      }));
+
+      const dateObj = new Date(Number(report.id));
+      const dateStr = dateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+      const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      await generatePdfReport({
+        reportDetails,
+        successCount: report.success,
+        failedCount: report.failed,
+        activeSitesCount: report.total,
+        triggerName: 'On-Demand Recovery',
+        dateStr: report.date || dateStr,
+        timeStr: report.time || timeStr,
+        pdfPath: filePath,
+        screenshotsDir
+      });
+      
+      console.log(`[On-Demand PDF] Successfully generated PDF file on disk: ${filePath}`);
     }
     res.download(filePath, report.file);
   } catch (err) {
     console.error('Error in GET /api/reports/:id/pdf:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: `Failed to retrieve or generate PDF report: ${err.message || err}` });
   }
 }
 
