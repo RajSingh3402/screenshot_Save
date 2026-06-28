@@ -24,6 +24,10 @@ server/public/screenshots/*
 !server/public/screenshots/.gitkeep
 server/public/reports/*
 !server/public/reports/.gitkeep
+client/public/screenshots/*
+!client/public/screenshots/.gitkeep
+client/public/reports/*
+!client/public/reports/.gitkeep
 server/mock_emails/
 
 # Logs and Diagnostics
