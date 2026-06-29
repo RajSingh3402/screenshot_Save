@@ -231,6 +231,22 @@ exports.Prisma.MetricScalarFieldEnum = {
   screenshotPath: 'screenshotPath'
 };
 
+exports.Prisma.ServerScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  host: 'host',
+  port: 'port',
+  username: 'username',
+  privateKeyPath: 'privateKeyPath',
+  lastUsage: 'lastUsage',
+  status: 'status',
+  alertSent: 'alertSent',
+  passphrase: 'passphrase',
+  lastChecked: 'lastChecked',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -317,6 +333,15 @@ exports.Prisma.MetricOrderByRelevanceFieldEnum = {
   screenshotPath: 'screenshotPath'
 };
 
+exports.Prisma.ServerOrderByRelevanceFieldEnum = {
+  name: 'name',
+  host: 'host',
+  username: 'username',
+  privateKeyPath: 'privateKeyPath',
+  status: 'status',
+  passphrase: 'passphrase'
+};
+
 
 exports.Prisma.ModelName = {
   Website: 'Website',
@@ -328,7 +353,8 @@ exports.Prisma.ModelName = {
   SmtpSetting: 'SmtpSetting',
   SmtpConfig: 'SmtpConfig',
   ScanExecutionLog: 'ScanExecutionLog',
-  Metric: 'Metric'
+  Metric: 'Metric',
+  Server: 'Server'
 };
 
 /**

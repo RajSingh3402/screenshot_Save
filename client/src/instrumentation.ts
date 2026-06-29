@@ -4,7 +4,6 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
-
     try {
       const globalForScheduler = global as unknown as { schedulerInitialized?: boolean };
       if (!globalForScheduler.schedulerInitialized) {
@@ -18,6 +17,14 @@ export async function register() {
       }
     } catch (err) {
       console.error('Failed to initialize scheduler:', err);
+    }
+
+    try {
+      const { initServerMonitoringCron } = await import('@/app/server-monitoring/scheduler');
+      initServerMonitoringCron();
+      console.log('Next.js Background Server Monitoring service successfully initialized.');
+    } catch (err) {
+      console.error('Failed to initialize server monitoring:', err);
     }
   }
 }

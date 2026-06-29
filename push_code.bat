@@ -1,0 +1,9 @@
+@echo off
+echo Adding all files to git staging...
+git add .
+echo Committing changes...
+git commit -m "Push all code changes"
+echo Pushing to origin main...
+git push origin main
+echo Done!
+pause

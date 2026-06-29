@@ -21,6 +21,7 @@ export function Sidebar({ page, setPage, user, onLogout, isOpen, onClose }: Side
     { id: "reports", label: "Reports", icon: "📄" },
     { id: "metrics", label: "Metrics Report", icon: "📈" },
     { id: "excel", label: "Excel Import", icon: "📊" },
+    { id: "server-monitoring", label: "⭐ Server Monitoring", icon: "🖥️" },
     { id: "users", label: "Users", icon: "👥" },
     { id: "settings", label: "Settings", icon: "⚙️" },
   ];
@@ -30,10 +31,10 @@ export function Sidebar({ page, setPage, user, onLogout, isOpen, onClose }: Side
     if (!user) return false;
     const role = user.role.toLowerCase();
     if (role === 'viewer') {
-      return ['dashboard', 'websites', 'reports', 'metrics'].includes(item.id);
+      return ['dashboard', 'websites', 'reports', 'metrics', 'server-monitoring'].includes(item.id);
     }
     if (role === 'editor') {
-      return ['dashboard', 'websites', 'reports', 'metrics', 'excel'].includes(item.id);
+      return ['dashboard', 'websites', 'reports', 'metrics', 'excel', 'server-monitoring'].includes(item.id);
     }
     return true; // Admin has full access
   });

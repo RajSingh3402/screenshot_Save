@@ -1,0 +1,19 @@
+
+=== MOCK EMAIL NOTIFICATION ===
+To: satyamsingh82844@gmail.com, uphit49@gmail.com, kiranm@geeconglobal.com
+From: satyamsingh.000121@gmail.com
+Subject: SiteWatch Metrics Report
+Body:
+Hello,
+
+Please find attached the SiteWatch Metrics Report generated on 29 Jun 2026 at 09:57 AM.
+
+Summary:
+- Total Websites checked: 201
+- Online: 191
+- Offline/Failed: 10
+
+Regards,
+SiteWatch Portal
+Attachment Saved: WebsiteReport_20260629_0957.pdf
+===============================

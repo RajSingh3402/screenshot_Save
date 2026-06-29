@@ -9,6 +9,7 @@ import { MetricsReport } from '@/features/metrics/components/MetricsReport';
 import { ExcelImport } from '@/features/excel/components/ExcelImport';
 import { UserManagement } from '@/features/users/components/UserManagement';
 import { SettingsManagement } from '@/features/settings/components/SettingsManagement';
+import { ServerMonitoring } from '@/app/server-monitoring/ServerMonitoring';
 import { S } from '@/styles/theme';
 
 export default function App() {
@@ -140,10 +141,10 @@ export default function App() {
     if (!currentUser) return false;
     const role = currentUser.role.toLowerCase();
     if (role === 'viewer') {
-      return ['dashboard', 'websites', 'reports', 'metrics'].includes(tab);
+      return ['dashboard', 'websites', 'reports', 'metrics', 'server-monitoring'].includes(tab);
     }
     if (role === 'editor') {
-      return ['dashboard', 'websites', 'reports', 'metrics', 'excel'].includes(tab);
+      return ['dashboard', 'websites', 'reports', 'metrics', 'excel', 'server-monitoring'].includes(tab);
     }
     return true; // Admin has full access
   };
@@ -160,6 +161,8 @@ export default function App() {
         return <MetricsReport openScreenshot={openScreenshot} user={currentUser} />;
       case 'excel':
         return <ExcelImport refreshSites={fetchSites} />;
+      case 'server-monitoring':
+        return <ServerMonitoring />;
       case 'users':
         return <UserManagement />;
       case 'settings':

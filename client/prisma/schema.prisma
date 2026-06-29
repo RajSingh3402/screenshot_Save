@@ -156,3 +156,23 @@ model Metric {
   @@map("metrics")
 }
 
+// 11. Servers Model
+model Server {
+  id             BigInt   @id @default(autoincrement())
+  name           String   @db.VarChar(255)
+  host           String   @db.VarChar(255)
+  port           Int      @default(22)
+  username       String   @db.VarChar(255)
+  privateKeyPath String   @db.VarChar(512) @map("private_key_path")
+  lastUsage      Int?     @map("last_usage")
+  status         String   @default("Offline") @db.VarChar(50)
+  alertSent      Boolean  @default(false) @map("alert_sent")
+  passphrase     String?  @map("passphrase") @db.VarChar(255)
+  lastChecked    DateTime? @map("last_checked")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("servers")
+}
+
+
